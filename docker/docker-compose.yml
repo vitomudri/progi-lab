@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - kuhari
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+  # kuhari-main:
+  #   image: ghcr.io/vitomudri/progi-lab:main
+  #   container_name: kuhari-main
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - kuhari
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", ""] # @todo Add check if container is alive
+  # kuhari-dev:
+  #   image: ghcr.io/vitomudri/progi-lab:dev
+  #   container_name: kuhari-dev
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - kuhari
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", ""] # @todo Add check if container is alive
+  # proxy:
+  #   image: nginx:stable-alpine
+  #   container_name: proxy
+  #   depends_on:
+  #     kuhari-main:
+  #       condition: service_healthy
+  #     kuhari-dev:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ../certs:/certs:ro
+  #     - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./proxy/conf.d:/etc/nginx/conf.d:ro
+  #     - ./proxy/certs.d:/etc/nginx/certs.d:ro
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #   networks:
+  #     - kuhari
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: postgres_data
+
+networks:
+  kuhari:
+    name: kuhari
