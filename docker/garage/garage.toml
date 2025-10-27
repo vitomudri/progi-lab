@@ -1,0 +1,30 @@
+replication_factor = 1
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "lmdb"
+metadata_auto_snapshot_interval = "6h"
+
+compression_level = 0 # Auto
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+#rpc_secret = "" # env: GARAGE_RPC_SECRET; openssl rand -hex 32
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.kuhari.app"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.kuhari.app"
+index = "index.html"
+
+[admin]
+api_bind_addr = "[::]:3903"
+#admin_token = "" # env: GARAGE_ADMIN_TOKEN; openssl rand -base64 32
+#metrics_token = "" # env: GARAGE_METRICS_TOKEN; openssl rand -base64 32
+
+[k2v_api]
+api_bind_addr = "[::]:3904"
