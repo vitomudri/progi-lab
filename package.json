@@ -1,0 +1,23 @@
+{
+    "name": "kuhari",
+    "version": "0.1.0",
+    "private": true,
+    "license": "MIT",
+    "workspaces": [
+        "backend/",
+        "frontend/"
+    ],
+    "scripts": {
+        "dev:backend": "npm --workspace backend run dev",
+        "dev:frontend": "npm --workspace frontend run dev",
+        "dev": "export PRODUCTION=0 && concurrently -k \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "build": "npm --workspaces run build",
+        "lint": "npm --workspaces run lint"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.0",
+        "eslint": "^8.56.0",
+        "tsx": "^4.20.6",
+        "typescript": "^5.3.3"
+    }
+}
