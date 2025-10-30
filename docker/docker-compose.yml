@@ -3,7 +3,7 @@ services:
     image: postgres:17-alpine
     container_name: postgres
     env_file:
-      - .env
+      - ../.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -17,7 +17,7 @@ services:
     image: dxflrs/garage:v2.1.0
     container_name: garage
     env_file:
-      - .env
+      - ../.env
     volumes:
       - ./garage/garage.toml:/etc/garage.toml:ro
       - garage_meta:/var/lib/garage/meta
@@ -34,7 +34,7 @@ services:
   #     garage:
   #       condition: service_started
   #   env_file:
-  #     - .env
+  #     - ../.env
   #   networks:
   #     - kuhari
   #   restart: unless-stopped
@@ -49,7 +49,7 @@ services:
   #     garage:
   #       condition: service_started
   #   env_file:
-  #     - .env
+  #     - ../.env
   #   networks:
   #     - kuhari
   #   restart: unless-stopped
