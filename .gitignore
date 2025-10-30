@@ -1,5 +1,7 @@
 /.env
 
+/backup
+
 /certs/certbot/*
 /certs/cloudflare/*
 !/certs/**/.gitkeep
