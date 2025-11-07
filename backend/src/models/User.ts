@@ -1,13 +1,4 @@
-import { Pool } from "pg";
-import { env } from "../env.js";
-
-const pool = new Pool({
-    user: env.PG_USER,
-    host: env.PG_HOST,
-    database: env.PG_DATABASE,
-    password: env.PG_PASS,
-    port: env.PG_PORT
-});
+import { pool } from "../db/initDatabase.js";
 
 export class User {
     id_korisnika: number;

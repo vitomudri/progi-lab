@@ -1,49 +1,36 @@
-import pg from 'pg';
+import pg from "pg";
+import { env } from "../env.js";
+import pkg from '../../package.json' with { type: 'json' };
 
-const pool = new pg.Pool({
-  user: 'zoroja',
-  host: 'kuhari.app',     
-  database: 'kuhari_dev', 
-  password: 'VOZKfJibKzBXLOcxKWkmFrju5naTp4yvyaWzlCwmA6D2ZqIfTc',            
-  port: 5432,
+export const pool = new pg.Pool({
+    user: env.PG_USER,
+    host: env.PG_HOST,
+    database: env.PG_DATABASE,
+    password: env.PG_PASS,
+    port: env.PG_PORT
 });
 
 export async function initDatabase() {
-  try {
-    console.log('Povezivanje na bazu...');
     const client = await pool.connect();
-    console.log('Spojeno!');
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS version_info (
-        key TEXT PRIMARY KEY,
-        value TEXT
-      );
+        CREATE TABLE IF NOT EXISTS metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        );
     `);
-    console.log('Tablica version_info provjerena/stvorena.');
-
-    const result = await client.query(
-      `SELECT value FROM version_info WHERE key = 'db_version';`
-    );
-    console.log('Upit izvršen.');
+    const result = await client.query(`SELECT value FROM metadata WHERE key = 'version';`);
 
     if (result.rowCount === 0) {
-      await client.query(`
-        INSERT INTO version_info (key, value)
-        VALUES ('db_version', '1.0');
-      `);
-      console.log('Baza inicijalizirana. Verzija 1.0');
+        // Database does not yet exist; The database schema should created here.
+        await client.query(`
+            INSERT INTO metadata (key, value)
+            VALUES ('version', '${pkg.version}');
+        `);
     } else {
-      console.log(`Baza već postoji. Verzija: ${result.rows[0].value}`);
+        /** @todo Database exists, but might be for an older version of the app? Extra checks need to be made; If need be, upgrade logic should be implemented here. */
     }
 
     client.release();
-    console.log('Veza zatvorena.');
-  } catch (err) {
-    console.error('Greška pri inicijalizaciji baze:', err);
-  }
-}
-initDatabase();
-
-
-
+    console.log("Database init finished.");
+};
