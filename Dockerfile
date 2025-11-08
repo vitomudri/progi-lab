@@ -26,10 +26,10 @@ LABEL description="Platforma kuhari je interaktivna platforma za povezivanje ins
 WORKDIR /app
 
 COPY --from=backend-build /build/backend/package*.json ./
+RUN npm ci --no-audit --omit=dev
+
 COPY --from=backend-build /build/backend/dist ./dist
 COPY --from=frontend-build /build/frontend/dist ./public
-
-RUN npm ci --no-audit --omit=dev
 
 HEALTHCHECK --timeout=5s --start-period=5s CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/healthcheck || exit 1
 
