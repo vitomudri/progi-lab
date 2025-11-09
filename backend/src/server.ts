@@ -1,8 +1,11 @@
-import express, { type Express } from "express";
+import { env } from "./env.js";
+import { initDatabase } from "./db/initDatabase.js";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import path from "path";
 import api_router from "./routes/api.js";
-import { env } from "./env.js";
+
+await initDatabase();
 
 const app: Express = express();
 
@@ -14,10 +17,16 @@ app.use(express.urlencoded());
 
 app.use("/api", api_router);
 
-const frontend_path: string = env.PRODUCTION ? path.join(process.cwd(), "frontend", "dist") : path.join(process.cwd(), "..", "frontend", "dist");
+const frontend_path: string = env.PRODUCTION ? path.join(process.cwd(), "public") : path.join(process.cwd(), "..", "frontend", "dist");
 app.use(express.static(frontend_path));
 app.use((req, res) => {
     res.sendFile(path.join(frontend_path, "index.html"));
 });
 
-app.listen(env.PORT, env.HOST);
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    res.status(err.status || 500).send(err.message || "Internal Server Error");
+});
+
+app.listen(env.PORT, env.HOST, () => {
+    console.log(`Listening on ${env.HOST}:${env.PORT}`);
+});
