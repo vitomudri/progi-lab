@@ -20,6 +20,5 @@ certbot certonly \
     --logs-dir "$WORKDIR/certs/certbot/work" \
     -d 'kuhari.app' \
     -d 'www.kuhari.app' \
-    -d 'dev.kuhari.app' \
     -d 's3.kuhari.app' \
     -d '*.s3.kuhari.app'

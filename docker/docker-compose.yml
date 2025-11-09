@@ -26,7 +26,7 @@ services:
       - kuhari
     restart: unless-stopped
   # kuhari-main:
-  #   image: ghcr.io/vitomudri/progi-lab:main
+  #   image: ghcr.io/vitomudri/kuhari:latest
   #   container_name: kuhari-main
   #   depends_on:
   #     postgres:
@@ -38,30 +38,11 @@ services:
   #   networks:
   #     - kuhari
   #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD-SHELL", ""] # @todo Add check if container is alive
-  # kuhari-dev:
-  #   image: ghcr.io/vitomudri/progi-lab:dev
-  #   container_name: kuhari-dev
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     garage:
-  #       condition: service_started
-  #   env_file:
-  #     - ../.env
-  #   networks:
-  #     - kuhari
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD-SHELL", ""] # @todo Add check if container is alive
   # proxy:
   #   image: nginx:stable-alpine
   #   container_name: proxy
   #   depends_on:
   #     kuhari-main:
-  #       condition: service_healthy
-  #     kuhari-dev:
   #       condition: service_healthy
   #     garage:
   #       condition: service_started
