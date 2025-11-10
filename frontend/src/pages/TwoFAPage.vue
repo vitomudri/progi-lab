@@ -21,10 +21,10 @@ const router = useRouter();
 
 function handle2FA() {
   if (!code.value) {
-    alert('Molimo unesite kod.');
+    //alert('Molimo unesite kod.');
     return;
   }
-  console.log('2FA kod:', code.value);
+  //console.log('2FA kod:', code.value);
   router.push('/participant-profile');
 }
 

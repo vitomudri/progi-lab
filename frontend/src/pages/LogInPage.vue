@@ -6,7 +6,7 @@
       <form @submit.prevent="handleLogin">
         <input v-model="email" type="email" placeholder="Adresa e-pošte" />
         <input v-model="password" type="password" placeholder="Lozinka" />
-        <p>Zaboravili ste lozinku?</p>
+        <a href="#">Zaboravili ste lozinku?</a>
         <button type="submit">Prijava</button>
         <router-link to="/signup">Novi ste korisnik? Registrirajte se ovdje</router-link>
       </form>
@@ -24,11 +24,11 @@ const router = useRouter();
 
 function handleLogin() {
   if (!email.value || !password.value) {
-    alert('Molimo unesite email i lozinku.');
+    //alert('Molimo unesite email i lozinku.');
     return;
   }
 
-  console.log('Prijava korisnika:', email.value, password.value);
+  //console.log('Prijava korisnika:', email.value, password.value);
   router.push('/2fa');
 }
 </script>
@@ -82,6 +82,7 @@ function handleLogin() {
   padding: 1rem;
   cursor: pointer;
   width: 100%;
+  margin-top: 1rem;
   margin-bottom: 1rem;
   font-size: 1rem;
 }

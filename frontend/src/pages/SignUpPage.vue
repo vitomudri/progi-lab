@@ -27,11 +27,11 @@ const router = useRouter();
 
 function handleSignup() {
   if (!ime.value || !prezime.value || !email.value || !lozinka.value) {
-    alert('Molimo ispunite sva polja.');
+    //alert('Molimo ispunite sva polja.');
     return;
   }
 
-  console.log('Registracija korisnika:', ime.value, prezime.value, email.value, lozinka.value);
+  //console.log('Registracija korisnika:', ime.value, prezime.value, email.value, lozinka.value);
   router.push('/login');
 }
 </script>
