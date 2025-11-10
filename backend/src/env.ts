@@ -11,7 +11,17 @@ const schema = z.object({
     PG_PORT: z.coerce.number().int().positive().default(5432),
     PG_USER: z.string(),
     PG_DATABASE: z.string(),
-    PG_PASS: z.string()
+    PG_PASS: z.string(),
+    EMAIL_HOST: z.string(),
+    EMAIL_PORT: z.coerce.number().int().positive().default(465),
+    EMAIL_SECURE: z
+        .string()
+        .refine((val) => ["true", "false", "1", "0"].includes(val))
+        .transform((val) => val === "true" || val === "1")
+        .default(true),
+    EMAIL_USERNAME: z.string(),
+    EMAIL_PASSWORD: z.string(),
+    EMAIL_FROM: z.string()
 });
 
 if (!PRODUCTION) {
