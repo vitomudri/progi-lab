@@ -11,7 +11,7 @@ export type UserRole = "student" | "instructor" | "admin";
 
 export class User {
     private is_new: boolean = false;
-    id: UUID;
+    user_id: UUID;
     first_name: string;
     last_name: string;
     email: string;
@@ -19,16 +19,20 @@ export class User {
     registration_date: Date;
     status?: UserStatus;
     role: UserRole;
+    audit_log_enabled: boolean;
+    must_change_password: boolean;
 
     constructor(options: NewUserOptions) {
         this.is_new = true;
-        this.id = randomUUID();
+        this.user_id = randomUUID();
         this.first_name = options.name;
         this.last_name = options.surname;
         this.email = options.email;
         this.password_hash = User.generate_password();
         this.registration_date = new Date();
         this.role = "student";
+        this.audit_log_enabled = false;
+        this.must_change_password = true;
     }
 
     private static generate_password(length: number = 12): string {
@@ -68,16 +72,16 @@ export class User {
     async save(): Promise<void> {
         if (this.is_new) {
             await pool.query(
-                `INSERT INTO "Users" ("id", "first_name", "last_name", "email", "password_hash", "registration_date", "role")
+                `INSERT INTO "Users" ("id", "first_name", "last_name", "email", "password_hash", "registration_date", "role", "audit_log_enabled", "must_change_password")
                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [this.id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.role]
+                [this.user_id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.role, this.audit_log_enabled, this.must_change_password]
             );
             this.is_new = false;
         } else {
             await pool.query(
-                `UPDATE "Users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "role" = $7
+                `UPDATE "Users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "role" = $7, "audit_log_enabled" = $8, "must_change_password" = $9
                  WHERE "id" = $1`,
-                [this.id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.role]
+                [this.user_id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.role, this.audit_log_enabled, this.must_change_password]
             );
         }
     }
