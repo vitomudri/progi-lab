@@ -1,11 +1,11 @@
 import { randomBytes, randomUUID, type UUID } from "crypto";
 import { pool } from "../db/initDatabase.js";
 
-export type NewUserOptions = { name: string; surname: string; email: string };
+export type NewUserOptions = { first_name: string; last_name: string; email: string };
 
-export type ExistingUserOptions = { id: UUID } | { email: string };
+export type ExistingUserOptions = { user_id: UUID } | { email: string };
 
-export type UserStatus = "active" | "blocked" | "unverified";
+export type UserStatus = "active" | "blocked" | "unverified" | null;
 
 export type UserRole = "student" | "instructor" | "admin";
 
@@ -17,7 +17,7 @@ export class User {
     email: string;
     password_hash: string;
     registration_date: Date;
-    status?: UserStatus;
+    status: UserStatus;
     role: UserRole;
     audit_log_enabled: boolean;
     must_change_password: boolean;
@@ -25,11 +25,12 @@ export class User {
     constructor(options: NewUserOptions) {
         this.is_new = true;
         this.user_id = randomUUID();
-        this.first_name = options.name;
-        this.last_name = options.surname;
+        this.first_name = options.first_name;
+        this.last_name = options.last_name;
         this.email = options.email;
         this.password_hash = User.generate_password();
         this.registration_date = new Date();
+        this.status = null;
         this.role = "student";
         this.audit_log_enabled = false;
         this.must_change_password = true;
@@ -45,21 +46,35 @@ export class User {
         return password;
     }
 
+    private static from_row(row: any): User {
+        const user = new User({ first_name: row.first_name, last_name: row.last_name, email: row.email });
+        user.user_id = row.user_id;
+        user.password_hash = row.password_hash;
+        user.registration_date = new Date(row.registration_date);
+        user.status = row.status;
+        user.role = row.role;
+        user.audit_log_enabled = row.audit_log_enabled;
+        user.must_change_password = row.must_change_password;
+        user.is_new = false;
+        return user;
+    }
+
+
     static async get_from_db(options: ExistingUserOptions): Promise<User | null> {
-        if ("id" in options) {
-            const result = await pool.query(`SELECT * FROM "Users" WHERE "id" = $1`, [options.id]);
-            return result.rows.length != 0 ? (result.rows[0] as User) : null;
+        if ("user_id" in options) {
+            const result = await pool.query(`SELECT * FROM "Users" WHERE "user_id" = $1`, [options.user_id]);
+            return result.rows.length != 0 ? User.from_row(result.rows[0]) : null;
         } else if ("email" in options) {
             const result = await pool.query(`SELECT * FROM "Users" WHERE "email" = $1`, [options.email]);
-            return result.rows.length != 0 ? (result.rows[0] as User) : null;
+            return result.rows.length != 0 ? User.from_row(result.rows[0]) : null;
         }
 
         return null;
     }
 
     static async exists_in_db(options: ExistingUserOptions): Promise<boolean> {
-        if ("id" in options) {
-            const result = await pool.query(`SELECT 1 FROM "Users" WHERE "id" = $1`, [options.id]);
+        if ("user_id" in options) {
+            const result = await pool.query(`SELECT 1 FROM "Users" WHERE "user_id" = $1`, [options.user_id]);
             return result.rows.length != 0;
         } else if ("email" in options) {
             const result = await pool.query(`SELECT 1 FROM "Users" WHERE "email" = $1`, [options.email]);
@@ -72,16 +87,16 @@ export class User {
     async save(): Promise<void> {
         if (this.is_new) {
             await pool.query(
-                `INSERT INTO "Users" ("id", "first_name", "last_name", "email", "password_hash", "registration_date", "role", "audit_log_enabled", "must_change_password")
-                VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [this.user_id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.role, this.audit_log_enabled, this.must_change_password]
+                `INSERT INTO "Users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "audit_log_enabled", "must_change_password")
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                [this.user_id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.status, this.role, this.audit_log_enabled, this.must_change_password]
             );
             this.is_new = false;
         } else {
             await pool.query(
-                `UPDATE "Users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "role" = $7, "audit_log_enabled" = $8, "must_change_password" = $9
-                 WHERE "id" = $1`,
-                [this.user_id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.role, this.audit_log_enabled, this.must_change_password]
+                `UPDATE "Users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "audit_log_enabled" = $9, "must_change_password" = $10
+                 WHERE "user_id" = $1`,
+                [this.user_id, this.first_name, this.last_name, this.email, this.password_hash, this.registration_date, this.status, this.role, this.audit_log_enabled, this.must_change_password]
             );
         }
     }
