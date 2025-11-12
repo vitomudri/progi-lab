@@ -6,7 +6,9 @@ const PRODUCTION: boolean = process.env.NODE_ENV === "production";
 const schema = z.object({
     HOST: z.string().default("localhost"),
     PORT: z.coerce.number().int().positive().default(3000),
-    CORS_ORIGIN: z.string().default("http://localhost:3000"),
+    CORS_ORIGIN: z.string().default("http://localhost:5173"),
+    JWT_SECRET: z.string(),
+    JWT_EXPIRES_IN: z.string().default("1d"),
     PG_HOST: z.string(),
     PG_PORT: z.coerce.number().int().positive().default(5432),
     PG_USER: z.string(),

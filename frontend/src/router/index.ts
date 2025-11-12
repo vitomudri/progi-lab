@@ -5,6 +5,7 @@ import LoginPage from '@/pages/LoginPage.vue'
 import SignUpPage from '@/pages/SignUpPage.vue'
 import TwoFAPage from '@/pages/TwoFAPage.vue'
 import InstructorProfile from '@/pages/InstructorProfile.vue'
+import ChangePassword from '@/pages/ChangePassword.vue'   // ✅ DODANO
 
 const routes: RouteRecordRaw[] = [
   {
@@ -36,6 +37,11 @@ const routes: RouteRecordRaw[] = [
     path: '/instructor-profile',
     name: 'InstructorProfile',
     component: InstructorProfile
+  },
+  {
+    path: '/change-password',        // ✅ NOVA RUTA
+    name: 'ChangePassword',
+    component: ChangePassword
   }
 ]
 

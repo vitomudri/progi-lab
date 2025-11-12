@@ -25,15 +25,41 @@ const email = ref('');
 const lozinka = ref('');
 const router = useRouter();
 
-function handleSignup() {
+async function handleSignup() {
   if (!ime.value || !prezime.value || !email.value || !lozinka.value) {
-    //alert('Molimo ispunite sva polja.');
+    alert('Molimo ispunite sva polja.');
     return;
   }
 
-  //console.log('Registracija korisnika:', ime.value, prezime.value, email.value, lozinka.value);
-  router.push('/login');
+  try {
+    const res = await fetch("http://localhost:3000/api/v1/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ime: ime.value,
+        prezime: prezime.value,
+        email: email.value,
+        lozinka: lozinka.value
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Greška pri registraciji.");
+      return;
+    }
+
+    router.push("/login");
+
+  } catch (err) {
+    console.error(err);
+    alert("Server nije dostupan.");
+  }
 }
+
 </script>
 
 <style scoped>

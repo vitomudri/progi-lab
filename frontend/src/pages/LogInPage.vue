@@ -6,7 +6,7 @@
       <form @submit.prevent="handleLogin">
         <input v-model="email" type="email" placeholder="Adresa e-pošte" />
         <input v-model="password" type="password" placeholder="Lozinka" />
-        <a href="#">Zaboravili ste lozinku?</a>
+        <router-link to="/change-password">Promijenite lozinku</router-link>
         <button type="submit">Prijava</button>
         <router-link to="/signup">Novi ste korisnik? Registrirajte se ovdje</router-link>
       </form>
@@ -22,15 +22,26 @@ const email = ref('');
 const password = ref('');
 const router = useRouter();
 
-function handleLogin() {
-  if (!email.value || !password.value) {
-    //alert('Molimo unesite email i lozinku.');
+async function handleLogin() {
+  const res = await fetch("http://localhost:3000/api/v1/auth/login", {
+    method: "POST",
+    credentials: 'include',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email.value,
+      lozinka: password.value
+    })
+  });
+
+  const data = await res.json();
+  
+  if (data.mustChangePassword) {
+    router.push("/change-password");
     return;
   }
-
-  //console.log('Prijava korisnika:', email.value, password.value);
-  router.push('/2fa');
+  router.push('/participant-profile');
 }
+
 </script>
 
 <style scoped>

@@ -20,7 +20,7 @@
 .hero {
   background-image: url('@/assets/images/hero-bg.jpg');
   background-size: cover;
-  background-position: center;
+  
   padding: 110px 100px;
   text-align: center;
   color: #2d2d2d;
@@ -32,6 +32,7 @@
   justify-content: center;
   position: relative;
 }
+
 .hero::before {
   content: '';
   position: absolute;
