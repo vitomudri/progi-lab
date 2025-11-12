@@ -1,5 +1,7 @@
 import { randomBytes, randomUUID, type UUID } from "crypto";
 import { pool } from "../db/initDatabase.js";
+import { EmailBuilder } from "../email/email.js";
+import argon2 from "argon2";
 
 export type NewUserOptions = { first_name: string; last_name: string; email: string };
 
@@ -84,7 +86,34 @@ export class User {
         return false;
     }
 
-    async save(): Promise<void> {
+    /**
+     * Returns true if the password matches and false if it does not
+     * @param input The input password
+     */
+    async check_password(input: string): Promise<boolean> {
+        return await argon2.verify(this.password_hash, input);
+    }
+
+    /**
+     * Resets the password to a secure default. Does not interact with `must_change_password`
+     * @returns The password
+     */
+    async reset_password(): Promise<string> {
+        const new_password = User.generate_password();
+        this.password_hash = await argon2.hash(new_password);
+        return new_password;
+    }
+
+    /**
+     * Changes the account password according to user input. Disables `must_change_password`
+     * @param input The input password
+     */
+    async set_password(input: string) {
+        this.password_hash = await argon2.hash(input);
+        this.must_change_password = false;
+    }
+
+    async save() {
         if (this.is_new) {
             await pool.query(
                 `INSERT INTO "Users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "audit_log_enabled", "must_change_password")

@@ -1,0 +1,20 @@
+
+* {
+  font-family: 'Gruppo', sans-serif;
+  font-weight: 600;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: 'Gruppo', sans-serif;
+  font-weight: 100;
+  background-color: #F5F1E8;
+  color: #302c27;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
