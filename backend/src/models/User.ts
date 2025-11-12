@@ -6,6 +6,8 @@ export class User {
     prezime: string;
     email: string;
     lozinka: string;
+    mustChangePassword: boolean;
+
 
     constructor(data: any) {
         this.id_korisnika = data.ID_korisnika;
@@ -13,6 +15,8 @@ export class User {
         this.prezime = data.Prezime;
         this.email = data.Email;
         this.lozinka = data.Lozinka;
+        this.mustChangePassword = data.MustChangePassword;
+
     }
 
     static async getByEmail(email: string): Promise<User | null> {
@@ -24,6 +28,20 @@ export class User {
         const result = await pool.query(`SELECT 1 FROM "Korisnik" WHERE "Email" = $1`, [email]);
         return result.rows.length > 0;
     }
+    async updatePassword(newHashedPassword: string): Promise<void> {
+        await pool.query(
+            `UPDATE "Korisnik"
+            SET "Lozinka" = $1,
+            "MustChangePassword" = false
+            WHERE "ID_korisnika" = $2`,
+            [newHashedPassword, this.id_korisnika]
+        );
+
+         // Ažuriraj instance vrijednosti u memoriji
+        this.lozinka = newHashedPassword;
+        this.mustChangePassword = false;
+}
+
 
     async save(): Promise<void> {
         await pool.query(`INSERT INTO "Korisnik" ("Ime", "Prezime", "Email", "Lozinka") VALUES ($1, $2, $3, $4)`, [
