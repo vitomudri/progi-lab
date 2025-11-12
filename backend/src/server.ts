@@ -1,12 +1,12 @@
 import { env } from "./env.js";
-import { initDatabase } from "./db/initDatabase.js";
+import { init_database } from "./db/initDatabase.js";
 import { init_email } from "./email/email.js";
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import path from "path";
 import api_router from "./routes/api.js";
 
-await initDatabase();
+await init_database();
 await init_email();
 
 const app: Express = express();
