@@ -1,5 +1,4 @@
 import express from "express";
-import argon2 from "argon2";
 import jwt, { type SignOptions, type Secret, type JwtPayload } from "jsonwebtoken";
 import { User } from "../../models/User.js";
 import { env } from "../../env.js";
