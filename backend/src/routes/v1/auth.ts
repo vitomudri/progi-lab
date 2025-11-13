@@ -22,7 +22,7 @@ authRouter.post("/register", async (req, res) => {
             return res.status(409).json({ error: "Email već postoji." });
         }
 
-        let user = new User({
+        let user = await User.new({
             first_name: ime,
             last_name: prezime,
             email: email
