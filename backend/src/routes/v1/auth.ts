@@ -134,7 +134,7 @@ authRouter.get("/me", async (req, res) => {
  */
 authRouter.post("/logout", (req, res) => {
     // Clear the token cookie using the same attributes used when creating it
-    res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: false });
+    res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: env.PRODUCTION });
     return res.json({ message: "Odjavljeni ste." });
 });
 
@@ -154,7 +154,7 @@ authRouter.post("/update-password", async (req, res) => {
             return res.status(404).json({ error: "Korisnik ne postoji." });
         }
 
-        if (!user.check_password(staralozinka)) {
+        if (!(await user.check_password(staralozinka))) {
             return res.status(401).json({ error: "Stara lozinka nije točna." });
         }
 
