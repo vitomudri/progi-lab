@@ -24,7 +24,7 @@ export class User {
     audit_log_enabled: boolean;
     must_change_password: boolean;
 
-    constructor(options: NewUserOptions) {
+    private constructor(options: NewUserOptions) {
         this.is_new = true;
         this.user_id = randomUUID();
         this.first_name = options.first_name;

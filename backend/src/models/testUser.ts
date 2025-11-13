@@ -7,7 +7,7 @@ async function test() {
 
     if (!exists) {
         console.log("➡ Ne postoji. Spremam novog...");
-        const novi = new User({
+        const novi = await User.new({
             first_name: "Mia",
             last_name: "Zoroja",
             email: "mia@example.com"
