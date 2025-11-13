@@ -3,29 +3,98 @@
     <div class="login-card">
       <h2>Dobrodošli natrag!</h2>
       <p>Prijavite se kako biste nastavili kuhati s nama</p>
+
       <form @submit.prevent="handleLogin">
         <input v-model="email" type="email" placeholder="Adresa e-pošte" />
         <input v-model="password" type="password" placeholder="Lozinka" />
+
         <router-link to="/change-password">Promijenite lozinku</router-link>
+
         <button type="submit">Prijava</button>
-        <router-link to="/signup">Novi ste korisnik? Registrirajte se ovdje</router-link>
+
+        <router-link to="/signup">
+          Novi ste korisnik? Registrirajte se ovdje
+        </router-link>
+
+        <!-- === GOOGLE BUTTON START === -->
+        <div ref="googleDiv" style="margin-top: 1rem;"></div>
+        <!-- === GOOGLE BUTTON END === -->
       </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 
-const email = ref('');
-const password = ref('');
+const email = ref("");
+const password = ref("");
 const router = useRouter();
+
+// === GOOGLE OAUTH FRONTEND START ===
+const googleDiv = ref(null);
+
+function handleGoogleCredentialResponse(response: any) {
+  fetch("/api/v1/auth/google", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: response.credential })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        console.error("Google OAuth error:", data.error);
+        alert("Greška pri Google prijavi: " + data.error);
+        return;
+      }
+      console.log("Google OAuth success, redirecting...");
+      router.push("/participant-profile");
+    })
+    .catch(err => {
+      console.error("Google OAuth fetch error:", err);
+      alert("Greška pri Google prijavi!");
+    });
+}
+
+onMounted(async () => {
+
+  // Load Google script if not already loaded
+  if (!(window as any).google) {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    // Wait for script to load
+    await new Promise((resolve) => {
+      script.onload = resolve;
+    });
+  }
+
+  // Initialize Google
+  if ((window as any).google) {
+    (window as any).google.accounts.id.initialize({
+      client_id: "952744768748-654697ktpb615dveup9ncdv0so0eqlt4.apps.googleusercontent.com",
+      callback: handleGoogleCredentialResponse,
+    });
+
+    (window as any).google.accounts.id.renderButton(googleDiv.value, {
+      theme: "outline",
+      size: "large",
+    });
+  } else {
+    console.error("Google script failed to load");
+  }
+});
+// === GOOGLE OAUTH FRONTEND END ===
 
 async function handleLogin() {
   const res = await fetch("/api/v1/auth/login", {
     method: "POST",
-    credentials: 'include',
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email: email.value,
@@ -39,9 +108,9 @@ async function handleLogin() {
     router.push("/change-password");
     return;
   }
-  router.push('/participant-profile');
-}
 
+  router.push("/participant-profile");
+}
 </script>
 
 <style scoped>
