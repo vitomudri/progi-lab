@@ -3,13 +3,13 @@
     <div class="login-card">
       <h2>Dobrodošli natrag!</h2>
       <p>Prijavite se kako biste nastavili kuhati s nama</p>
-      
+
       <form @submit.prevent="handleLogin">
         <input v-model="email" type="email" placeholder="Adresa e-pošte" />
         <input v-model="password" type="password" placeholder="Lozinka" />
-        
+
         <router-link to="/change-password">Promijenite lozinku</router-link>
-        
+
         <button type="submit">Prijava</button>
 
         <router-link to="/signup">
@@ -36,7 +36,7 @@ const router = useRouter();
 const googleDiv = ref(null);
 
 function handleGoogleCredentialResponse(response: any) {
-  fetch("http://localhost:3000/api/v1/auth/google", {
+  fetch("/api/v1/auth/google", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -61,7 +61,7 @@ function handleGoogleCredentialResponse(response: any) {
 onMounted(async () => {
   // Wait for Google script to load
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  
+
   if (!googleClientId) {
     console.warn("VITE_GOOGLE_CLIENT_ID not configured");
     return;
