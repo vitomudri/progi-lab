@@ -31,7 +31,7 @@ RUN npm ci --no-audit --omit=dev
 COPY --from=backend-build /build/backend/dist ./dist
 COPY --from=frontend-build /build/frontend/dist ./public
 
-HEALTHCHECK --timeout=5s --start-period=5s CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/healthcheck || exit 1
+HEALTHCHECK --timeout=5s --start-period=5s CMD sh -c 'wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT}/api/healthcheck || exit 1'
 
 USER node
 
