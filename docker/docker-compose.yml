@@ -25,38 +25,38 @@ services:
     networks:
       - kuhari
     restart: unless-stopped
-  # kuhari-main:
-  #   image: ghcr.io/vitomudri/kuhari:latest
-  #   container_name: kuhari-main
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     garage:
-  #       condition: service_started
-  #   env_file:
-  #     - ../.env
-  #   networks:
-  #     - kuhari
-  #   restart: unless-stopped
-  # proxy:
-  #   image: nginx:stable-alpine
-  #   container_name: proxy
-  #   depends_on:
-  #     kuhari-main:
-  #       condition: service_healthy
-  #     garage:
-  #       condition: service_started
-  #   volumes:
-  #     - ../certs:/certs:ro
-  #     - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./proxy/conf.d:/etc/nginx/conf.d:ro
-  #     - ./proxy/certs.d:/etc/nginx/certs.d:ro
-  #   ports:
-  #     - 80:80
-  #     - 443:443
-  #   networks:
-  #     - kuhari
-  #   restart: unless-stopped
+  kuhari-main:
+    image: ghcr.io/vitomudri/kuhari:latest
+    container_name: kuhari-main
+    depends_on:
+      postgres:
+        condition: service_healthy
+      garage:
+        condition: service_started
+    env_file:
+      - ../.env
+    networks:
+      - kuhari
+    restart: unless-stopped
+  proxy:
+    image: nginx:stable-alpine
+    container_name: proxy
+    depends_on:
+      kuhari-main:
+        condition: service_healthy
+      garage:
+        condition: service_started
+    volumes:
+      - ../certs:/certs:ro
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/conf.d:/etc/nginx/conf.d:ro
+      - ./proxy/certs.d:/etc/nginx/certs.d:ro
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - kuhari
+    restart: unless-stopped
 
 volumes:
   postgres_data:
