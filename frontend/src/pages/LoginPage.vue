@@ -23,7 +23,7 @@ const password = ref('');
 const router = useRouter();
 
 async function handleLogin() {
-  const res = await fetch("http://localhost:3000/api/v1/auth/login", {
+  const res = await fetch("/api/v1/auth/login", {
     method: "POST",
     credentials: 'include',
     headers: { "Content-Type": "application/json" },
@@ -34,7 +34,7 @@ async function handleLogin() {
   });
 
   const data = await res.json();
-  
+
   if (data.mustChangePassword) {
     router.push("/change-password");
     return;
@@ -100,15 +100,15 @@ async function handleLogin() {
 
 .login-card a {
   font-size: 0.875rem;
-  color: #000000;        
-  text-decoration: none;  
+  color: #000000;
+  text-decoration: none;
   transition: color 0.2s;
 }
 
 .login-card a:hover {
   border-radius: 7px;
   background-color: #F5F1E5;
-  color: #555555;        
+  color: #555555;
   text-decoration: underline;
 }
 </style>
