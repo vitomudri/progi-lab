@@ -59,13 +59,6 @@ function handleGoogleCredentialResponse(response: any) {
 }
 
 onMounted(async () => {
-  // Wait for Google script to load
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-  if (!googleClientId) {
-    console.warn("VITE_GOOGLE_CLIENT_ID not configured");
-    return;
-  }
 
   // Load Google script if not already loaded
   if (!(window as any).google) {
@@ -84,7 +77,7 @@ onMounted(async () => {
   // Initialize Google
   if ((window as any).google) {
     (window as any).google.accounts.id.initialize({
-      client_id: googleClientId,
+      client_id: "952744768748-654697ktpb615dveup9ncdv0so0eqlt4.apps.googleusercontent.com",
       callback: handleGoogleCredentialResponse,
     });
 
