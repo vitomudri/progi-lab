@@ -99,7 +99,7 @@ onMounted(async () => {
 // === GOOGLE OAUTH FRONTEND END ===
 
 async function handleLogin() {
-  const res = await fetch("http://localhost:3000/api/v1/auth/login", {
+  const res = await fetch("/api/v1/auth/login", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
