@@ -7,7 +7,6 @@
         <input v-model="ime" type="text" placeholder="Ime" />
         <input v-model="prezime" type="text" placeholder="Prezime" />
         <input v-model="email" type="email" placeholder="Adresa e-pošte" />
-        <input v-model="lozinka" type="password" placeholder="Lozinka" />
         <button type="submit">Registracija</button>
         <router-link to="/login">Već imate račun? Prijavite se ovdje</router-link>
       </form>
@@ -22,11 +21,10 @@ import { useRouter } from 'vue-router';
 const ime = ref('');
 const prezime = ref('');
 const email = ref('');
-const lozinka = ref('');
 const router = useRouter();
 
 async function handleSignup() {
-  if (!ime.value || !prezime.value || !email.value || !lozinka.value) {
+  if (!ime.value || !prezime.value || !email.value) {
     alert('Molimo ispunite sva polja.');
     return;
   }
@@ -40,8 +38,7 @@ async function handleSignup() {
       body: JSON.stringify({
         ime: ime.value,
         prezime: prezime.value,
-        email: email.value,
-        lozinka: lozinka.value
+        email: email.value
       })
     });
 
@@ -117,15 +114,15 @@ async function handleSignup() {
 
 .signup-card a {
   font-size: 0.875rem;
-  color: #000000;        
-  text-decoration: none;  
+  color: #000000;
+  text-decoration: none;
   transition: color 0.2s;
 }
 
 .signup-card a:hover {
   border-radius: 7px;
   background-color: #F5F1E5;
-  color: #555555;        
+  color: #555555;
   text-decoration: underline;
 }
 </style>

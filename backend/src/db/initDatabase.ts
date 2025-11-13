@@ -44,8 +44,8 @@ export async function init_database() {
                     audit_log_enabled BOOLEAN DEFAULT false,
                     must_change_password BOOLEAN DEFAULT true,
                     CONSTRAINT email_key UNIQUE(email),
-                    CONSTRAINT status_check CHECK (status IN ('aktivan', 'blokiran', 'nepotvrđen')),
-                    CONSTRAINT role_check CHECK (role IN ('instruktor', 'admin', 'polaznik'))
+                    CONSTRAINT status_check CHECK (status IN ('active', 'blocked', 'unverified')),
+                    CONSTRAINT role_check CHECK (role IN ('student', 'instructor', 'admin'))
                 );
             `);
 
@@ -61,7 +61,7 @@ export async function init_database() {
                         ON UPDATE NO ACTION
                         ON DELETE CASCADE,
                     CONSTRAINT instructor_rating_check CHECK(rating >= 0 AND rating <= 5)
-                ); 
+                );
             `);
 
             await client.query(`
@@ -103,8 +103,8 @@ export async function init_database() {
                         ON UPDATE NO ACTION
                         ON DELETE SET NULL,
                     CONSTRAINT difficulty_check CHECK (difficulty >= 1 AND difficulty <= 5),
-                    CONSTRAINT rating_check CHECK (rating >= 0 AND rating <= 5) 
-                );    
+                    CONSTRAINT rating_check CHECK (rating >= 0 AND rating <= 5)
+                );
             `);
 
             await client.query(`
@@ -238,7 +238,7 @@ export async function init_database() {
                         ON DELETE CASCADE,
                     CONSTRAINT type_check CHECK(type IN ('podsjetnik', 'novost', 'potvrda')),
                     CONSTRAINT status_check CHECK(status IN ('poslano', 'procitano'))
-                ); 
+                );
             `);
 
             await client.query(`
@@ -273,7 +273,7 @@ export async function init_database() {
                     CONSTRAINT tab_id_fkey FOREIGN KEY(tab_id)
                         REFERENCES Tabs(tab_id)
                         ON UPDATE NO ACTION
-                        ON DELETE CASCADE                
+                        ON DELETE CASCADE
                 );
             `);
 

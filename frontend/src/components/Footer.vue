@@ -1,7 +1,7 @@
 <template>
   <footer class="footer">
     <div class="footer-links">
-      <p>info@kuhari.hr</p>
+      <p>donotreply@kuhari.app</p>
       <p>FAQ</p>
       <div class="social-icons">
   <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
@@ -25,7 +25,7 @@
   font-size: 13px;
   color: #3b3b3b;
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
-  z-index: 100; 
+  z-index: 100;
 }
 
 .footer-links {
@@ -39,7 +39,7 @@
 .footer-links p:hover {
   cursor: pointer;
   transform: all 0.3s ease;
-  color: #5a5a5a; 
+  color: #5a5a5a;
   transform: scale(1.05);
 }
 
@@ -52,12 +52,12 @@
 
 .social-icons a {
   color: #3b3b3b;
-  font-size: 20px; 
+  font-size: 20px;
   transition: all 0.3s ease;
 }
 
 .social-icons a:hover {
-  color: #5a5a5a; 
+  color: #5a5a5a;
   transform: scale(1.1);
 }
 

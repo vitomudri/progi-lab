@@ -2,6 +2,7 @@ import { env } from "./env.js";
 import { init_database } from "./db/initDatabase.js";
 import { init_email } from "./email/email.js";
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
 import api_router from "./api.js";
@@ -16,10 +17,7 @@ app.set("trust proxy", true);
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true}));
 app.use(express.json());
 app.use(express.urlencoded());
-import cookieParser from "cookie-parser";
-
 app.use(cookieParser());
-
 
 app.use("/api", api_router);
 

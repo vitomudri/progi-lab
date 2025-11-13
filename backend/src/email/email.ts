@@ -67,7 +67,7 @@ export class EmailBuilder {
     private attachments: Attachment[] = [];
 
     private static format_address(user: User): string {
-        const display_name = [user.ime, user.prezime].filter(Boolean).join(" ").trim();
+        const display_name = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
         return display_name ? `${display_name} <${user.email}>` : user.email;
     }
 
