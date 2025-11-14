@@ -9,6 +9,7 @@ const schema = z.object({
     CORS_ORIGIN: z.string().default("http://localhost:5173"),
     JWT_SECRET: z.string(),
     JWT_EXPIRES_IN: z.string().default("1d"),
+    GOOGLE_CLIENT_ID: z.string().optional(),
     PG_HOST: z.string(),
     PG_PORT: z.coerce.number().int().positive().default(5432),
     PG_USER: z.string(),
