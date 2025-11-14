@@ -20,7 +20,7 @@ authRouter.post("/register", async (req, res) => {
             return res.status(400).json({ error: "Nedostaju podaci." });
         }
 
-        const exists = await User.exists_in_db({ email: email });
+        const exists = await User.exists({ email: email });
         if (exists) {
             return res.status(409).json({ error: "Email već postoji." });
         }
@@ -51,7 +51,7 @@ authRouter.post("/login", async (req, res) => {
             return res.status(400).json({ error: "Nedostaju podaci." });
         }
 
-        let user = await User.get_from_db({ email: email });
+        let user = await User.from_db({ email: email });
         if (!user) {
             return res.status(404).json({ error: "Korisnik ne postoji." });
         }
@@ -107,7 +107,7 @@ authRouter.get("/me", async (req, res) => {
         }
 
         const decoded = jwt.verify(token, String(env.JWT_SECRET)) as JwtPayload;
-        const user = await User.get_from_db({ user_id: decoded.id });
+        const user = await User.from_db({ user_id: decoded.id });
 
         if (!user) {
             return res.status(404).json({ error: "Korisnik nije pronađen." });
@@ -150,7 +150,7 @@ authRouter.post("/update-password", async (req, res) => {
             return res.status(400).json({ error: "Nedostaju podaci." });
         }
 
-        const user = await User.get_from_db({ email: email });
+        const user = await User.from_db({ email: email });
         if (!user) {
             return res.status(404).json({ error: "Korisnik ne postoji." });
         }
@@ -210,7 +210,7 @@ authRouter.post("/google", async (req, res) => {
         const prezime = payload.family_name || "";
 
         // Provjeri postoji li korisnik
-        let user = await User.get_from_db({email: email});
+        let user = await User.from_db({email: email});
 
         if (!user) {
             const newUser = await User.new({
