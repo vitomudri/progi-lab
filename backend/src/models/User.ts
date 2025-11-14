@@ -77,7 +77,7 @@ export class User {
         return user;
     }
 
-    static async get_from_db(options: ExistingUserOptions): Promise<User | null> {
+    static async from_db(options: ExistingUserOptions): Promise<User | null> {
         if ("user_id" in options) {
             const result = await pool.query(`SELECT * FROM "users" WHERE "user_id" = $1`, [options.user_id]);
             return result.rows.length != 0 ? User.from_row(result.rows[0]) : null;

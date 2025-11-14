@@ -17,7 +17,7 @@ async function test() {
     }
 
     console.log("➡ Dohvaćam usera...");
-    const user = await User.get_from_db({ email: "mia@example.com" });
+    const user = await User.from_db({ email: "mia@example.com" });
     console.log("User dobiven:", user);
 }
 
