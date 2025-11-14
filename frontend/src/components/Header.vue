@@ -28,7 +28,8 @@
         <li class="search" @click="toggleSearch">
           <i class="fa-regular fa-magnifying-glass"></i>
         </li>
-        <li><a href="#">Prijava</a></li>
+        <li><router-link to="/login">Prijava</router-link></li>
+        <li><router-link to="/participant-profile">Profil</router-link></li>
       </ul>
     </nav>
 
