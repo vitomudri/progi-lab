@@ -1,5 +1,4 @@
 import { randomUUID, type UUID } from "crypto";
-import { UUIDSchema } from "../util.js";
 import { z } from "zod";
 import { pool } from "../db/initDatabase.js";
 
@@ -12,12 +11,12 @@ export const NewRecipeOptionsSchema = z.object({
 export type NewRecipeOptions = z.infer<typeof NewRecipeOptionsSchema>;
 
 export const ExistingRecipeOptionsSchema = z.object({
-    recipe_id: UUIDSchema
+    recipe_id: z.uuidv4()
 });
 export type ExistingRecipeOptions = z.infer<typeof ExistingRecipeOptionsSchema>;
 
 export const RecipeSummarySchema = z.object({
-    recipe_id: UUIDSchema,
+    recipe_id: z.uuidv4(),
     name: z.string()
 });
 export type RecipeSummary = z.infer<typeof RecipeSummarySchema>;
