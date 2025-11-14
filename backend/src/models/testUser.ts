@@ -2,7 +2,7 @@ import { User } from "./User.js";
 
 async function test() {
     console.log("Provjeravam postoji li email...");
-    const exists = await User.exists_in_db({ email: "mia@example.com" });
+    const exists = await User.exists({ email: "mia@example.com" });
     console.log("Postoji?", exists);
 
     if (!exists) {
@@ -17,7 +17,7 @@ async function test() {
     }
 
     console.log("➡ Dohvaćam usera...");
-    const user = await User.get_from_db({ email: "mia@example.com" });
+    const user = await User.from_db({ email: "mia@example.com" });
     console.log("User dobiven:", user);
 }
 
