@@ -140,7 +140,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Recipes (
-                    recipe_id SERIAL PRIMARY KEY,
+                    recipe_id VARCHAR PRIMARY KEY,
                     name VARCHAR,
                     description VARCHAR,
                     prep_time INTEGER,
