@@ -1,11 +1,13 @@
 import { randomUUID, type UUID } from "crypto";
 import { pool } from "../db/initDatabase.js";
 
-export type NewRecipeOptions = { name: string, description: string, prep_time: number, number_of_servings: number };
+export type NewRecipeOptions = { name: string; description: string; prep_time: number; number_of_servings: number };
 
 export type ExistingRecipeOptions = { recipe_id: UUID };
 
-class Recipe {
+export type RecipeSummary = { recipe_id: UUID; name: string };
+
+export class Recipe {
     private is_new: boolean = false;
     recipe_id: UUID;
     name: string;
@@ -34,7 +36,7 @@ class Recipe {
             if (row) {
                 return new Recipe(false, row.recipe_id, row.name, row.description, row.prep_time, row.number_of_servings);
             }
-        } catch(ignored) {}
+        } catch (ignored) {}
 
         return null;
     }
@@ -59,5 +61,10 @@ class Recipe {
                 [this.recipe_id, this.name, this.description, this.prep_time, this.number_of_servings]
             );
         }
+    }
+
+    static async get_popular(): Promise<RecipeSummary[]> {
+        const result = await pool.query(`SELECT recipe_id, name FROM recipes ORDER BY recipe_id LIMIT 8`);
+        return result.rows.map((row) => ({recipe_id: row.recipe_id, name: row.name}));
     }
 }
