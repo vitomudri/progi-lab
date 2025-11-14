@@ -20,7 +20,7 @@ authRouter.post("/register", async (req, res) => {
             return res.status(400).json({ error: "Nedostaju podaci." });
         }
 
-        const exists = await User.exists_in_db({ email: email });
+        const exists = await User.exists({ email: email });
         if (exists) {
             return res.status(409).json({ error: "Email već postoji." });
         }
