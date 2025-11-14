@@ -1,11 +1,26 @@
 import { randomUUID, type UUID } from "crypto";
+import { UUIDSchema } from "../util.js";
+import { z } from "zod";
 import { pool } from "../db/initDatabase.js";
 
-export type NewRecipeOptions = { name: string; description: string; prep_time: number; number_of_servings: number };
+export const NewRecipeOptionsSchema = z.object({
+    name: z.string(),
+    description: z.string(),
+    prep_time: z.number(),
+    number_of_servings: z.number()
+});
+export type NewRecipeOptions = z.infer<typeof NewRecipeOptionsSchema>;
 
-export type ExistingRecipeOptions = { recipe_id: UUID };
+export const ExistingRecipeOptionsSchema = z.object({
+    recipe_id: UUIDSchema
+});
+export type ExistingRecipeOptions = z.infer<typeof ExistingRecipeOptionsSchema>;
 
-export type RecipeSummary = { recipe_id: UUID; name: string };
+export const RecipeSummarySchema = z.object({
+    recipe_id: UUIDSchema,
+    name: z.string()
+});
+export type RecipeSummary = z.infer<typeof RecipeSummarySchema>;
 
 export class Recipe {
     private is_new: boolean = false;
@@ -65,6 +80,6 @@ export class Recipe {
 
     static async get_popular(): Promise<RecipeSummary[]> {
         const result = await pool.query(`SELECT recipe_id, name FROM recipes ORDER BY recipe_id LIMIT 8`);
-        return result.rows.map((row) => ({recipe_id: row.recipe_id, name: row.name}));
+        return result.rows.map((row) => ({ recipe_id: row.recipe_id, name: row.name }));
     }
 }
