@@ -17,6 +17,7 @@
         </router-link>
 
         <button type="button" @click="handleGoogleLogin">Google Prijava</button>
+        <button type="button" @click="handleGitHubLogin">GitHub Prijava</button>
       </form>
     </div>
   </div>
@@ -32,6 +33,10 @@ const router = useRouter();
 
 function handleGoogleLogin() {
   window.location.href = "/api/v1/auth/google/redirect";
+}
+
+function handleGitHubLogin() {
+  window.location.href = "/api/v1/auth/github/redirect";
 }
 
 async function handleLogin() {

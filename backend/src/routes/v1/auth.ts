@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import { User } from "../../models/User.js";
 import { env } from "../../env.js";
 import require_auth from "../../middleware/require_auth.js";
+import ms, { type StringValue } from "ms";
 
 const authRouter = express.Router();
 
@@ -78,7 +79,7 @@ authRouter.post("/login", async (req, res) => {
             httpOnly: true,
             sameSite: "lax",
             secure: env.PRODUCTION,
-            maxAge: 1000 * 60 * 60 * 24 // 1 dan
+            maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
         });
 
         return res.json({
@@ -180,7 +181,7 @@ authRouter.get("/google/callback", async (req, res) => {
     try {
         const code = req.query.code as string;
         if (!code) {
-            return res.status(400).json({ error: "Nedostaje autorizacijski kod." });
+            return res.status(401).json({ error: "Unauthorized" });
         }
 
         // Exchange code for tokens
@@ -195,7 +196,7 @@ authRouter.get("/google/callback", async (req, res) => {
 
         const payload = ticket.getPayload();
         if (!payload || !payload.email) {
-            return res.status(400).json({ error: "Neispravan Google token." });
+            return res.status(401).json({ error: "Unauthorized" });
         }
 
         const email = payload.email;
@@ -226,17 +227,102 @@ authRouter.get("/google/callback", async (req, res) => {
             httpOnly: true,
             sameSite: "lax",
             secure: env.PRODUCTION,
-            maxAge: 1000 * 60 * 60 * 24
+            maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
         });
 
-        // Redirect to frontend
-        res.redirect(`${env.CORS_ORIGIN}participant-profile`);
+        res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
     } catch (err) {
         console.error("Google callback error:", err);
-        res.status(500).json({ error: "Greška pri Google prijavi." });
+        res.status(401).json({ error: "Unauthorized" });
     }
 });
 
-// === GOOGLE OAUTH END ===
+/**
+ * GITHUB OAUTH REDIRECT — GET /api/v1/auth/github/redirect
+ */
+authRouter.get("/github/redirect", (req, res) => {
+    const authorizeUrl = `https://github.com/login/oauth/authorize?client_id=${env.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(env.GITHUB_REDIRECT_URI)}&scope=user:email&response_type=code`;
+    res.redirect(authorizeUrl);
+});
+
+/**
+ * GITHUB CALLBACK — GET /api/v1/auth/github/callback
+ */
+authRouter.get("/github/callback", async (req, res) => {
+    try {
+        const code = req.query.code as string;
+        if (!code) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            body: new URLSearchParams({
+                client_id: env.GITHUB_CLIENT_ID,
+                client_secret: env.GITHUB_CLIENT_SECRET,
+                code: code,
+                redirect_uri: env.GITHUB_REDIRECT_URI
+            })
+        });
+
+        const tokenData: any = await tokenResponse.json();
+        const accessToken = tokenData.access_token;
+        if (!accessToken) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const userResponse = await fetch('https://api.github.com/user', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const userData: any = await userResponse.json();
+
+        let email = userData.email;
+        let first_name = userData.name ? userData.name.split(' ')[0] : '';
+        let last_name = userData.name ? userData.name.split(' ').slice(1).join(' ') : '';
+
+        if (!email) {
+            const emailsResponse = await fetch('https://api.github.com/user/emails', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            const emails: any = await emailsResponse.json();
+            const primaryEmail = emails.find((e: any) => e.primary)?.email;
+            email = primaryEmail || '';
+        }
+
+        if (!email) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        let user = await User.from_db({ email: email });
+
+        if (!user) {
+            const newUser = await User.new({
+                first_name: first_name,
+                last_name: last_name,
+                email: email
+            });
+
+            await newUser.save();
+            user = newUser;
+        }
+
+        const secret: Secret = String(env.JWT_SECRET);
+        const options = { expiresIn: env.JWT_EXPIRES_IN || "1d" } as any as SignOptions;
+        const jwtToken = jwt.sign({ id: user.user_id, email: user.email }, secret, options);
+
+        res.cookie("token", jwtToken, {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: env.PRODUCTION,
+            maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
+        });
+
+        res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+    } catch (err) {
+        console.error("GitHub callback error:", err);
+        res.status(401).json({ error: "Unauthorized" });
+    }
+});
 
 export default authRouter;
