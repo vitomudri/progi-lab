@@ -16,80 +16,28 @@
           Novi ste korisnik? Registrirajte se ovdje
         </router-link>
 
-        <!-- === GOOGLE BUTTON START === -->
-        <div ref="googleDiv" style="margin-top: 1rem;"></div>
-        <!-- === GOOGLE BUTTON END === -->
+        <button type="button" @click="handleGoogleLogin">Google Prijava</button>
+        <button type="button" @click="handleGitHubLogin">GitHub Prijava</button>
       </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 const email = ref("");
 const password = ref("");
 const router = useRouter();
 
-// === GOOGLE OAUTH FRONTEND START ===
-const googleDiv = ref(null);
-
-function handleGoogleCredentialResponse(response: any) {
-  fetch("/api/v1/auth/google", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: response.credential })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        console.error("Google OAuth error:", data.error);
-        alert("Greška pri Google prijavi: " + data.error);
-        return;
-      }
-      console.log("Google OAuth success, redirecting...");
-      router.push("/participant-profile");
-    })
-    .catch(err => {
-      console.error("Google OAuth fetch error:", err);
-      alert("Greška pri Google prijavi!");
-    });
+function handleGoogleLogin() {
+  window.location.href = "/api/v1/auth/google/redirect";
 }
 
-onMounted(async () => {
-
-  // Load Google script if not already loaded
-  if (!(window as any).google) {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-
-    // Wait for script to load
-    await new Promise((resolve) => {
-      script.onload = resolve;
-    });
-  }
-
-  // Initialize Google
-  if ((window as any).google) {
-    (window as any).google.accounts.id.initialize({
-      client_id: "952744768748-654697ktpb615dveup9ncdv0so0eqlt4.apps.googleusercontent.com",
-      callback: handleGoogleCredentialResponse,
-    });
-
-    (window as any).google.accounts.id.renderButton(googleDiv.value, {
-      theme: "outline",
-      size: "large",
-    });
-  } else {
-    console.error("Google script failed to load");
-  }
-});
-// === GOOGLE OAUTH FRONTEND END ===
+function handleGitHubLogin() {
+  window.location.href = "/api/v1/auth/github/redirect";
+}
 
 async function handleLogin() {
   const res = await fetch("/api/v1/auth/login", {
