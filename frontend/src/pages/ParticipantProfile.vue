@@ -56,7 +56,7 @@ async function handleLogout() {
 onMounted(async () => {
   loading.value = true;
   try {
-    const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
+    const res = await fetch('/api/v1/profile/me', { credentials: 'include' });
     if (!res.ok) {
       throw new Error((await res.json()).error || res.statusText);
     }
@@ -84,7 +84,7 @@ onMounted(async () => {
 .profile-page-wrapper {
   display: flex;
   flex-direction: column;
-  flex: 1; 
+  flex: 1;
   padding: 1rem;
   background-color: #F5F1E5;
   font-family: 'Rajdhani', sans-serif;
@@ -92,7 +92,7 @@ onMounted(async () => {
 }
 
 .profile-details {
-  flex: 1; 
+  flex: 1;
   margin-top: 1rem;
   background-color: #FFF;
   padding: 1.5rem;

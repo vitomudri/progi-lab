@@ -3,7 +3,6 @@ import jwt, { type SignOptions, type Secret, type JwtPayload } from "jsonwebtoke
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../../models/User.js";
 import { env } from "../../env.js";
-import { require_auth } from "../../middleware/auth.js";
 import ms, { type StringValue } from "ms";
 
 const authRouter = express.Router();
@@ -95,24 +94,6 @@ authRouter.post("/login", async (req, res) => {
         console.error("Login error:", err);
         res.status(500).json({ error: "Greška na serveru." });
     }
-});
-
-/**
- *  GET USER — GET /api/v1/auth/me
- */
-authRouter.get("/me", require_auth, async (req, res) => {
-    // vrati profil korisnika, ostalo ce se definirati kasnije, za sada imamo samo profil polaznika
-    return res.json({
-        id: req.user!.user_id,
-        ime: req.user!.first_name,
-        prezime: req.user!.last_name,
-        email: req.user!.email,
-        skillLevel: "Početnik",
-        allergens: [],
-        favoriteCuisines: [],
-        courseHistory: [],
-        notes: ""
-    });
 });
 
 /**
