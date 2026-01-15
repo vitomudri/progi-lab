@@ -13,6 +13,7 @@
           <p><strong>Povijest tečajeva:</strong> {{ profileData.courseHistory.join(', ') }}</p>
           <p><strong>Bilješke:</strong> {{ profileData.notes }}</p>
           <div class="profile-actions">
+            <button @click="redirect2FA">2FA Postavke</button>
             <button @click="handleLogout">Odjava</button>
           </div>
         </template>
@@ -51,6 +52,10 @@ async function handleLogout() {
   } catch (err) {
     console.error('Logout error', err);
   }
+}
+
+async function redirect2FA() {
+    router.push('/2fa-settings');
 }
 
 onMounted(async () => {
