@@ -213,7 +213,11 @@ auth_router.get("/google/callback", async (req, res) => {
             maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
         });
 
-        res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        if (user.totp_secret) {
+            res.redirect(`${env.CORS_ORIGIN}/2fa`);
+        } else {
+            res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        }
     } catch (err) {
         console.error("Google callback error:", err);
         res.status(401).json({ error: "Unauthorized" });
@@ -301,7 +305,11 @@ auth_router.get("/github/callback", async (req, res) => {
             maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
         });
 
-        res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        if (user.totp_secret) {
+            res.redirect(`${env.CORS_ORIGIN}/2fa`);
+        } else {
+            res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        }
     } catch (err) {
         console.error("GitHub callback error:", err);
         res.status(401).json({ error: "Unauthorized" });
@@ -330,6 +338,7 @@ auth_router.post("/2fa/verify-setup", require_nototp_auth, async (req, res) => {
     user.totp_secret = secret;
     await user.save();
 
+    res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: env.PRODUCTION });
     return res.json({ message: "2fa enabled" });
 });
 
@@ -352,6 +361,7 @@ auth_router.post("/2fa/disable", require_nototp_auth, async (req, res) => {
     user.totp_secret = null;
     await user.save();
 
+    res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: env.PRODUCTION });
     return res.json({ message: "2FA disabled" });
 });
 
