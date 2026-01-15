@@ -1,5 +1,5 @@
 import { env } from "./env.js";
-import { init_database } from "./db/initDatabase.js";
+import { init_database } from "./db/db.js";
 import { init_email } from "./email/email.js";
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cookieParser from "cookie-parser";

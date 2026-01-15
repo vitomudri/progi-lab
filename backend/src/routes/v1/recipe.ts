@@ -1,5 +1,5 @@
 import { Router } from "express";
-import require_auth from "../../middleware/require_auth.js";
+import { require_auth } from "../../middleware/auth.js";
 import {
     ExistingRecipeOptionsSchema,
     NewRecipeOptionsSchema,

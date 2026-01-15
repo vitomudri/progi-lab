@@ -3,7 +3,7 @@ import jwt, { type SignOptions, type Secret, type JwtPayload } from "jsonwebtoke
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../../models/User.js";
 import { env } from "../../env.js";
-import require_auth from "../../middleware/require_auth.js";
+import { require_auth } from "../../middleware/auth.js";
 import ms, { type StringValue } from "ms";
 
 const authRouter = express.Router();

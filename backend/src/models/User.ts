@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID, type UUID } from "crypto";
-import { pool } from "../db/initDatabase.js";
+import { pool } from "../db/db.js";
 import { EmailBuilder } from "../email/email.js";
 import argon2 from "argon2";
 
