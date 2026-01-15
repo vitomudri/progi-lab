@@ -13,6 +13,7 @@
           <p><strong>Povijest tečajeva:</strong> {{ profileData.courseHistory.join(', ') }}</p>
           <p><strong>Bilješke:</strong> {{ profileData.notes }}</p>
           <div class="profile-actions">
+            <button @click="redirect2FA">2FA Postavke</button>
             <button @click="handleLogout">Odjava</button>
           </div>
         </template>
@@ -53,10 +54,14 @@ async function handleLogout() {
   }
 }
 
+async function redirect2FA() {
+    router.push('/2fa-settings');
+}
+
 onMounted(async () => {
   loading.value = true;
   try {
-    const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
+    const res = await fetch('/api/v1/profile/me', { credentials: 'include' });
     if (!res.ok) {
       throw new Error((await res.json()).error || res.statusText);
     }
@@ -84,7 +89,7 @@ onMounted(async () => {
 .profile-page-wrapper {
   display: flex;
   flex-direction: column;
-  flex: 1; 
+  flex: 1;
   padding: 1rem;
   background-color: #F5F1E5;
   font-family: 'Rajdhani', sans-serif;
@@ -92,7 +97,7 @@ onMounted(async () => {
 }
 
 .profile-details {
-  flex: 1; 
+  flex: 1;
   margin-top: 1rem;
   background-color: #FFF;
   padding: 1.5rem;

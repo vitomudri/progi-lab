@@ -43,6 +43,7 @@ export async function init_database() {
                     role VARCHAR,
                     audit_log_enabled BOOLEAN DEFAULT false,
                     must_change_password BOOLEAN DEFAULT true,
+                    totp_secret VARCHAR,
                     CONSTRAINT email_key UNIQUE(email),
                     CONSTRAINT status_check CHECK (status IN ('active', 'blocked', 'unverified')),
                     CONSTRAINT role_check CHECK (role IN ('student', 'instructor', 'admin'))

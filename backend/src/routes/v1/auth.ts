@@ -3,10 +3,11 @@ import jwt, { type SignOptions, type Secret, type JwtPayload } from "jsonwebtoke
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../../models/User.js";
 import { env } from "../../env.js";
-import require_auth from "../../middleware/require_auth.js";
 import ms, { type StringValue } from "ms";
+import { generate_TOTP_secret, verify_TOTP_token } from "../../util/mfa.js";
+import { require_nototp_auth } from "../../middleware/auth.js";
 
-const authRouter = express.Router();
+const auth_router = express.Router();
 
 // Google OAuth client (only if GOOGLE_CLIENT_ID is configured)
 const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI);
@@ -14,7 +15,7 @@ const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SE
 /**
  * REGISTER — POST /api/v1/auth/register
  */
-authRouter.post("/register", async (req, res) => {
+auth_router.post("/register", async (req, res) => {
     try {
         const { ime, prezime, email } = req.body;
 
@@ -45,7 +46,7 @@ authRouter.post("/register", async (req, res) => {
 /**
  * LOGIN — POST /api/v1/auth/login
  */
-authRouter.post("/login", async (req, res) => {
+auth_router.post("/login", async (req, res) => {
     try {
         const { email, lozinka } = req.body;
 
@@ -72,7 +73,7 @@ authRouter.post("/login", async (req, res) => {
         // Generiraj JWT token
         const secret: Secret = String(env.JWT_SECRET);
         const options = { expiresIn: env.JWT_EXPIRES_IN || "1d" } as unknown as SignOptions;
-        const token = jwt.sign({ id: user.user_id, email: user.email }, secret, options);
+        const token = jwt.sign({ id: user.user_id, email: user.email, totp_verified: false }, secret, options);
 
         // Pošalji token kao HTTP-only cookie
         res.cookie("token", token, {
@@ -98,27 +99,9 @@ authRouter.post("/login", async (req, res) => {
 });
 
 /**
- *  GET USER — GET /api/v1/auth/me
- */
-authRouter.get("/me", require_auth, async (req, res) => {
-    // vrati profil korisnika, ostalo ce se definirati kasnije, za sada imamo samo profil polaznika
-    return res.json({
-        id: req.user!.user_id,
-        ime: req.user!.first_name,
-        prezime: req.user!.last_name,
-        email: req.user!.email,
-        skillLevel: "Početnik",
-        allergens: [],
-        favoriteCuisines: [],
-        courseHistory: [],
-        notes: ""
-    });
-});
-
-/**
  *  LOGOUT — POST /api/v1/auth/logout
  */
-authRouter.post("/logout", (req, res) => {
+auth_router.post("/logout", (req, res) => {
     res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: env.PRODUCTION });
     return res.json({ message: "Odjavljeni ste." });
 });
@@ -126,7 +109,7 @@ authRouter.post("/logout", (req, res) => {
 /**
  * PROMJENA LOZINKE — POST /api/v1/auth/update-password
  */
-authRouter.post("/update-password", async (req, res) => {
+auth_router.post("/update-password", async (req, res) => {
     try {
         const { email, staralozinka, novalozinka, potvrdilozinku } = req.body;
 
@@ -164,7 +147,7 @@ authRouter.post("/update-password", async (req, res) => {
 /**
  * GOOGLE OAUTH REDIRECT — GET /api/v1/auth/google/redirect
  */
-authRouter.get("/google/redirect", (req, res) => {
+auth_router.get("/google/redirect", (req, res) => {
     const authorizeUrl = googleClient.generateAuthUrl({
         access_type: 'offline',
         scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email'],
@@ -177,7 +160,7 @@ authRouter.get("/google/redirect", (req, res) => {
 /**
  * GOOGLE CALLBACK — GET /api/v1/auth/google/callback
  */
-authRouter.get("/google/callback", async (req, res) => {
+auth_router.get("/google/callback", async (req, res) => {
     try {
         const code = req.query.code as string;
         if (!code) {
@@ -207,30 +190,34 @@ authRouter.get("/google/callback", async (req, res) => {
         let user = await User.from_db({ email: email });
 
         if (!user) {
-            const newUser = await User.new({
+            const new_user = await User.new({
                 first_name: first_name,
                 last_name: last_name,
                 email: email
             });
 
-            await newUser.save();
-            user = newUser;
+            await new_user.save();
+            user = new_user;
         }
 
         // Generiranje JWT tokena
         const secret: Secret = String(env.JWT_SECRET);
         const options = { expiresIn: env.JWT_EXPIRES_IN || "1d" } as unknown as SignOptions;
-        const jwtToken = jwt.sign({ id: user.user_id, email: user.email }, secret, options);
+        const jwt_token = jwt.sign({ id: user.user_id, email: user.email, totp_verified: false }, secret, options);
 
         // Pošalji cookie
-        res.cookie("token", jwtToken, {
+        res.cookie("token", jwt_token, {
             httpOnly: true,
             sameSite: "lax",
             secure: env.PRODUCTION,
             maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
         });
 
-        res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        if (user.totp_secret) {
+            res.redirect(`${env.CORS_ORIGIN}/2fa`);
+        } else {
+            res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        }
     } catch (err) {
         console.error("Google callback error:", err);
         res.status(401).json({ error: "Unauthorized" });
@@ -240,7 +227,7 @@ authRouter.get("/google/callback", async (req, res) => {
 /**
  * GITHUB OAUTH REDIRECT — GET /api/v1/auth/github/redirect
  */
-authRouter.get("/github/redirect", (req, res) => {
+auth_router.get("/github/redirect", (req, res) => {
     const authorizeUrl = `https://github.com/login/oauth/authorize?client_id=${env.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(env.GITHUB_REDIRECT_URI)}&scope=user:email&response_type=code`;
     res.redirect(authorizeUrl);
 });
@@ -248,7 +235,7 @@ authRouter.get("/github/redirect", (req, res) => {
 /**
  * GITHUB CALLBACK — GET /api/v1/auth/github/callback
  */
-authRouter.get("/github/callback", async (req, res) => {
+auth_router.get("/github/callback", async (req, res) => {
     try {
         const code = req.query.code as string;
         if (!code) {
@@ -297,32 +284,120 @@ authRouter.get("/github/callback", async (req, res) => {
         let user = await User.from_db({ email: email });
 
         if (!user) {
-            const newUser = await User.new({
+            const new_user = await User.new({
                 first_name: first_name,
                 last_name: last_name,
                 email: email
             });
 
-            await newUser.save();
-            user = newUser;
+            await new_user.save();
+            user = new_user;
         }
 
         const secret: Secret = String(env.JWT_SECRET);
         const options = { expiresIn: env.JWT_EXPIRES_IN || "1d" } as any as SignOptions;
-        const jwtToken = jwt.sign({ id: user.user_id, email: user.email }, secret, options);
+        const jwt_token = jwt.sign({ id: user.user_id, email: user.email, totp_verified: false }, secret, options);
 
-        res.cookie("token", jwtToken, {
+        res.cookie("token", jwt_token, {
             httpOnly: true,
             sameSite: "lax",
             secure: env.PRODUCTION,
             maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
         });
 
-        res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        if (user.totp_secret) {
+            res.redirect(`${env.CORS_ORIGIN}/2fa`);
+        } else {
+            res.redirect(`${env.CORS_ORIGIN}/participant-profile`);
+        }
     } catch (err) {
         console.error("GitHub callback error:", err);
         res.status(401).json({ error: "Unauthorized" });
     }
 });
 
-export default authRouter;
+auth_router.post("/2fa/request-setup", require_nototp_auth, async (req, res) => {
+    const user = req.user!;
+    const { secret, qr_code } = await generate_TOTP_secret(user.email);
+
+    return res.json({ secret, qr_code });
+});
+
+auth_router.post("/2fa/verify-setup", require_nototp_auth, async (req, res) => {
+    const user = req.user!;
+    const { secret, token } = req.body;
+
+    if (!secret || !token) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!verify_TOTP_token(secret, token)) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    user.totp_secret = secret;
+    await user.save();
+
+    res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: env.PRODUCTION });
+    return res.json({ message: "2fa enabled" });
+});
+
+auth_router.post("/2fa/disable", require_nototp_auth, async (req, res) => {
+    const user = req.user!;
+    const { token } = req.body;
+
+    if (!token) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!user.totp_secret) {
+        return res.status(409).json({ error: "Conflict" });
+    }
+
+    if (!verify_TOTP_token(user.totp_secret, token)) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    user.totp_secret = null;
+    await user.save();
+
+    res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: env.PRODUCTION });
+    return res.json({ message: "2FA disabled" });
+});
+
+auth_router.get("/2fa/status", require_nototp_auth, (req, res) => {
+    const user = req.user!;
+    return res.json({ totp_enabled: user.totp_secret !== null });
+});
+
+auth_router.post("/2fa/verify-token", require_nototp_auth, async (req, res) => {
+    const user = req.user!;
+    const { token } = req.body;
+
+    if (!token) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!user.totp_secret) {
+        return res.status(409).json({ error: "Conflict" });
+    }
+
+    if (!verify_TOTP_token(user.totp_secret, token)) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const secret: Secret = String(env.JWT_SECRET);
+    const options = { expiresIn: env.JWT_EXPIRES_IN || "1d" } as any as SignOptions;
+    const jwt_token = jwt.sign({ id: user.user_id, email: user.email, totp_verified: true }, secret, options);
+
+    res.cookie("token", jwt_token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: env.PRODUCTION,
+        maxAge: ms(env.JWT_EXPIRES_IN as StringValue)
+    });
+
+    return res.json({ message: "Fully authenticated" });
+});
+
+export default auth_router;

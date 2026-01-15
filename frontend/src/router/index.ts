@@ -4,6 +4,7 @@ import ParticipantProfile from '@/pages/ParticipantProfile.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import SignUpPage from '@/pages/SignUpPage.vue'
 import TwoFAPage from '@/pages/TwoFAPage.vue'
+import TwoFASettings from '@/pages/TwoFASettings.vue'
 import InstructorProfile from '@/pages/InstructorProfile.vue'
 import ChangePassword from '@/pages/ChangePassword.vue'
 import AddRecipe from '@/pages/AddRecipe.vue' // ✅ NOVO DODANO
@@ -33,6 +34,11 @@ const routes: RouteRecordRaw[] = [
     path: '/2fa',
     name: 'TwoFA',
     component: TwoFAPage
+  },
+  {
+    path: '/2fa-settings',
+    name: 'TwoFASettings',
+    component: TwoFASettings
   },
   {
     path: '/instructor-profile',
