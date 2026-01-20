@@ -8,7 +8,7 @@ metadata_auto_snapshot_interval = "6h"
 compression_level = 0 # Auto
 
 rpc_bind_addr = "[::]:3901"
-rpc_public_addr = "127.0.0.1:3901"
+rpc_public_addr = "0.0.0.0:3901"
 #rpc_secret = "" # env: GARAGE_RPC_SECRET; openssl rand -hex 32
 
 [s3_api]
