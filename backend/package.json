@@ -4,6 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
         "dev": "tsx ./src/server.ts",
         "build": "tsc",
         "prod": "node dist/server.js"
