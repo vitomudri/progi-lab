@@ -1,105 +1,117 @@
 <template>
   <div class="profile-page-wrapper">
-    <UserCard
-        :ime="profileData.ime"
-        :prezime="profileData.prezime"
-        :email="profileData.email"
-      />
-      <section class="profile-details">
-        <template v-if="!error">
-          <p><strong>Razine vještine:</strong> {{ profileData.skillLevel }}</p>
-          <p><strong>Alergeni:</strong> {{ profileData.allergens.join(', ') }}</p>
-          <p><strong>Omiljene kuhinje:</strong> {{ profileData.favoriteCuisines.join(', ') }}</p>
-          <p><strong>Povijest tečajeva:</strong> {{ profileData.courseHistory.join(', ') }}</p>
-          <p><strong>Bilješke:</strong> {{ profileData.notes }}</p>
-          <div class="profile-actions">
-            <button @click="handleLogout">Odjava</button>
-          </div>
-        </template>
-        <template v-else>
-          <p><strong>Niste prijavljeni.</strong></p>
-        </template>
-      </section>
+    <div class="profile-card">
+      <div class="avatar-wrapper">
+        <div class="avatar">
+          <div class="head"></div>
+          <div class="body"></div>
+        </div>
+
+        <h2 class="name">{{ profileData.ime }} {{ profileData.prezime }}</h2>
+        <p class="email">{{ profileData.email }}</p>
+      </div>
+
+      <div class="details">
+        <p><span class="label">Razina vještine:</span> {{ profileData.skillLevel }}</p>
+        <p><span class="label">Alergeni:</span> {{ profileData.allergens.join(', ') || '—' }}</p>
+        <p><span class="label">Omiljene kuhinje:</span> {{ profileData.favoriteCuisines.join(', ') || '—' }}</p>
+        <p><span class="label">Povijest tečajeva:</span> {{ profileData.courseHistory.join(', ') || '—' }}</p>
+        <p><span class="label">Bilješke:</span> {{ profileData.notes || '—' }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import UserCard from "../components/UserCard.vue";
-import { ref, onMounted } from "vue";
-import { useRouter } from 'vue-router';
+import { ref } from "vue";
 
 const profileData = ref({
-  ime: "",
-  prezime: "",
-  email: "",
-  skillLevel: "",
-  allergens: [] as string[],
-  favoriteCuisines: [] as string[],
-  courseHistory: [] as string[],
-  notes: ""
-});
-
-const loading = ref(true);
-const error = ref<string | null>(null);
-const router = useRouter();
-
-async function handleLogout() {
-  try {
-    const res = await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-    if (!res.ok) throw new Error('Logout failed');
-    router.push('/login');
-  } catch (err) {
-    console.error('Logout error', err);
-  }
-}
-
-onMounted(async () => {
-  loading.value = true;
-  try {
-    const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
-    if (!res.ok) {
-      throw new Error((await res.json()).error || res.statusText);
-    }
-    const data = await res.json();
-    profileData.value = {
-      ime: data.ime || "",
-      prezime: data.prezime || "",
-      email: data.email || "",
-      skillLevel: data.skillLevel || "",
-      allergens: data.allergens || [],
-      favoriteCuisines: data.favoriteCuisines || [],
-      courseHistory: data.courseHistory || [],
-      notes: data.notes || ""
-    };
-  } catch (err: any) {
-    console.error('Failed to load profile', err);
-    error.value = err.message || 'Greška pri učitavanju profila.';
-  } finally {
-    loading.value = false;
-  }
+  ime: "Marko",
+  prezime: "Marić",
+  email: "marko@example.com",
+  skillLevel: "Početnik",
+  allergens: ["Gluten"],
+  favoriteCuisines: ["Talijanska", "Mediteranska"],
+  courseHistory: ["Osnove kuhanja"],
+  notes: "Volim jednostavne recepte."
 });
 </script>
 
 <style scoped>
 .profile-page-wrapper {
-  display: flex;
-  flex-direction: column;
-  flex: 1; 
-  padding: 1rem;
   background-color: #F5F1E5;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
   font-family: 'Rajdhani', sans-serif;
-  color: #000;
 }
 
-.profile-details {
-  flex: 1; 
-  margin-top: 1rem;
-  background-color: #FFF;
-  padding: 1.5rem;
-  overflow-y: auto;
+.profile-card {
+  background-color: #FFFCF4;
+  border-radius: 28px;
+  padding: 3rem 2rem;
+  max-width: 720px;
+  width: 100%;
 }
-.profile-details p {
-  margin: 0.5rem 0;
-  line-height: 1.5;
+
+/* Avatar – isti kao instruktor */
+.avatar-wrapper {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  background-color: #E3DFD2;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  position: relative;
+}
+
+.head {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #555;
+  border-radius: 50%;
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.body {
+  width: 60px;
+  height: 30px;
+  border: 3px solid #555;
+  border-top: none;
+  border-radius: 0 0 40px 40px;
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Text */
+.name {
+  margin-bottom: 0.25rem;
+}
+
+.email {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.details {
+  text-align: left;
+}
+
+.details p {
+  margin: 0.75rem 0;
+  line-height: 1.6;
+}
+
+.label {
+  font-weight: 600;
 }
 </style>
