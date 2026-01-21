@@ -29,7 +29,11 @@ const schema = z.object({
         .default(true),
     EMAIL_USERNAME: z.string(),
     EMAIL_PASSWORD: z.string(),
-    EMAIL_FROM: z.string()
+    EMAIL_FROM: z.string(),
+    S3_ENDPOINT : z.string(),
+    S3_ACCESS_KEY : z.string(),
+    S3_SECRET_KEY : z.string(),
+    S3_BUCKET_NAME : z.string()
 });
 
 if (!PRODUCTION) {

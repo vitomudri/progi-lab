@@ -4,14 +4,26 @@ import { S3Client } from "@aws-sdk/client-s3";
 // import { s3 } from "./s3.js";
 import { pool } from "../db/db.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { env } from "../env.js";
 
+const s3 = new S3Client({
+  region: "garage",
+  endpoint: env.S3_ENDPOINT,
+  credentials: {
+    accessKeyId: env.S3_ACCESS_KEY,
+    secretAccessKey: env.S3_SECRET_KEY
+  },
+  forcePathStyle: true
+});
+
+//predstavlja file čija se instanca sprema u bazu
 export class StoredFile {
   private constructor(
     public readonly id: string,
     public readonly bucket: string,
     public readonly key: string,
     public readonly originalName: string,
-    public readonly mimeType: string,
+    public readonly mimeType: string, //format type/subtype (npr. text/plain)
     public readonly size: number,
     public readonly createdAt: Date
   ) {}
@@ -34,10 +46,6 @@ export class StoredFile {
     );
   }
 
-  // getUrl(): string {
-  //   return `https://${this.bucket}.s3.amazonaws.com/${this.key}`;
-  // }
-
   static async save(file: StoredFile): Promise<void> {
     await pool.query(
       `
@@ -59,15 +67,16 @@ export class StoredFile {
   }
 }
 
+// inicijalizira se prvo
 export class S3StorageService {
-  constructor(private s3: S3Client, private bucket: string) {}
+  constructor(private bucket: string, private client : S3Client = s3) {}
 
   async upload(
     key: string,
     body: Buffer,
     contentType: string
   ): Promise<void> {
-    await this.s3.send(
+    await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
@@ -86,33 +95,40 @@ export class S3StorageService {
       Key: key
     });
 
-    return getSignedUrl(this.s3, command, {
+    return getSignedUrl(this.client, command, {
       expiresIn: expiresInSeconds
     });
   }
+
+  getBucket(): string {
+    return this.bucket;
+  }
 }
 
+//inicijalizira se pomoću S3StorageService
 export class FileService {
   constructor(
     private storage: S3StorageService
   ) {}
 
+  //URL na file u bucketu
   async getDownloadUrl(file: StoredFile): Promise<string> {
     return this.storage.getSignedDownloadUrl(file.key);
   }
 
+  //prima buffer za file, stvara novi StoredFile, sprema ga u bazu, radi upload u s3 bucket
   async uploadAndSave(input: {
     buffer: Buffer;
     originalName: string;
     mimeType: string;
     size: number;
   }): Promise<StoredFile> {
-    const key = `uploads/${crypto.randomUUID()}-${input.originalName}`;
+    const key = `${crypto.randomUUID()}-${input.originalName}`;
 
     await this.storage.upload(key, input.buffer, input.mimeType);
 
     const file = StoredFile.create({
-      bucket: this.storage["bucket"],
+      bucket: this.storage.getBucket(),
       key,
       originalName: input.originalName,
       mimeType: input.mimeType,
