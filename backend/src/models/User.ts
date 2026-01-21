@@ -53,7 +53,7 @@ export class User {
         this.totp_secret = totp_secret;
     }
 
-    static async new(options: NewUserOptions): Promise<User> {
+    static async new(options: NewUserOptions, send_mail: boolean = true): Promise<User> {
         const new_password = User.generate_password();
 
         const user = new User(
@@ -66,18 +66,20 @@ export class User {
             new Date(),
             null,
             "student",
-            false,
+            true,
             true,
             null
         );
 
-        await new EmailBuilder()
-            .add_recipient(user)
-            .with_subject("Registration complete")
-            .with_text_body(
-                `Your registration has been completed.\n\nYour temporary password is: ${new_password}\n\nPlease change it as soon as possible!`
-            )
-            .build_and_send();
+        if (send_mail) {
+            await new EmailBuilder()
+                .add_recipient(user)
+                .with_subject("Registration complete")
+                .with_text_body(
+                    `Your registration has been completed.\n\nYour temporary password is: ${new_password}\n\nPlease change it as soon as possible!`
+                )
+                .build_and_send();
+        }
 
         return user;
     }
@@ -190,15 +192,17 @@ export class User {
      * Resets the password to a secure default. Does not interact with `must_change_password`
      * @returns The password
      */
-    async reset_password(): Promise<string> {
+    async reset_password(send_mail: boolean = true): Promise<string> {
         const new_password = User.generate_password();
         this.password_hash = await argon2.hash(new_password);
 
-        await new EmailBuilder()
-            .add_recipient(this)
-            .with_subject("Password reset")
-            .with_text_body(`Your password has been reset.\n\nYour temporary password is: ${new_password}\n\nPlease change it as soon as possible!`)
-            .build_and_send();
+        if (send_mail) {
+            await new EmailBuilder()
+                .add_recipient(this)
+                .with_subject("Password reset")
+                .with_text_body(`Your password has been reset.\n\nYour temporary password is: ${new_password}\n\nPlease change it as soon as possible!`)
+                .build_and_send();
+        }
 
         return new_password;
     }

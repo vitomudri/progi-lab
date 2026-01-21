@@ -5,7 +5,7 @@ import { User } from "../../models/User.js";
 import { env } from "../../env.js";
 import ms, { type StringValue } from "ms";
 import { generate_TOTP_secret, verify_TOTP_token } from "../../util/mfa.js";
-import { require_nototp_auth } from "../../middleware/auth.js";
+import { require_auth, require_nototp_auth } from "../../middleware/auth.js";
 
 const auth_router = express.Router();
 
@@ -101,7 +101,7 @@ auth_router.post("/login", async (req, res) => {
 /**
  *  LOGOUT — POST /api/v1/auth/logout
  */
-auth_router.post("/logout", (req, res) => {
+auth_router.post("/logout", require_auth, (req, res) => {
     res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: env.PRODUCTION });
     return res.json({ message: "Odjavljeni ste." });
 });
