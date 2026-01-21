@@ -1,13 +1,14 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { S3Client } from "@aws-sdk/client-s3";
-// import { s3 } from "./s3.js";
 import { pool } from "../db/db.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "../env.js";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
+//s3 client based on env variables
 const s3 = new S3Client({
-  region: "garage",
+  region: env.S3_REGION,
   endpoint: env.S3_ENDPOINT,
   credentials: {
     accessKeyId: env.S3_ACCESS_KEY,
@@ -16,14 +17,14 @@ const s3 = new S3Client({
   forcePathStyle: true
 });
 
-//predstavlja file čija se instanca sprema u bazu
+//represents file whose instance gets saved in the db
 export class StoredFile {
   private constructor(
     public readonly id: string,
     public readonly bucket: string,
     public readonly key: string,
     public readonly originalName: string,
-    public readonly mimeType: string, //format type/subtype (npr. text/plain)
+    public readonly mimeType: string, //format type/subtype (eg. text/plain)
     public readonly size: number,
     public readonly createdAt: Date
   ) {}
@@ -67,7 +68,7 @@ export class StoredFile {
   }
 }
 
-// inicijalizira se prvo
+//initialize first
 export class S3StorageService {
   constructor(private bucket: string, private client : S3Client = s3) {}
 
@@ -82,6 +83,15 @@ export class S3StorageService {
         Key: key,
         Body: body,
         ContentType: contentType
+      })
+    );
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: key
       })
     );
   }
@@ -105,18 +115,18 @@ export class S3StorageService {
   }
 }
 
-//inicijalizira se pomoću S3StorageService
+//initialize after S3StorageService
 export class FileService {
   constructor(
     private storage: S3StorageService
   ) {}
 
-  //URL na file u bucketu
+  //URL to a file in a bucket
   async getDownloadUrl(file: StoredFile): Promise<string> {
     return this.storage.getSignedDownloadUrl(file.key);
   }
 
-  //prima buffer za file, stvara novi StoredFile, sprema ga u bazu, radi upload u s3 bucket
+  //takes in a buffer for a file, creates new StoredFile, saves it in the db, uploads to s3 bucket
   async uploadAndSave(input: {
     buffer: Buffer;
     originalName: string;
@@ -135,7 +145,14 @@ export class FileService {
       size: input.size
     });
 
-    await StoredFile.save(file);
+    try {
+      await StoredFile.save(file);
+    } catch (error) {
+      // Attempt to clean up the orphaned S3 object
+      await this.storage.delete(key);
+      // Re-throw the original error to the caller
+      throw error;
+    }
 
     return file;
   }
