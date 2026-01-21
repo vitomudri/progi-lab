@@ -45,8 +45,8 @@ const log_map: Map<string, string> = new Map([
 ]);
 
 export default async function log(req: Request, res: Response, next: NextFunction) {
-    if (req.user !== undefined && req.user.audit_log_enabled) {
-        const user = req.user!;
+    if (req.context.user !== undefined && req.context.user.audit_log_enabled) {
+        const user = req.context.user!;
         const route_path = req.route?.path || req.path;
         console.log(route_path);
         res.on("finish", async () => {

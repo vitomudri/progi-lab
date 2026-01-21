@@ -1,25 +1,25 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt, { type JwtPayload } from "jsonwebtoken";
-import { User } from "../models/User.js";
+import { Admin, Instructor, Student, User, type UserRole } from "../models/User.js";
 import { env } from "../env.js";
 
-declare global {
-    namespace Express {
-        interface Request {
-            user?: User;
-        }
-    }
-}
-
 export async function maybe_auth(req: Request, res: Response, next: NextFunction) {
-    if (req.user === undefined) {
+    if (req.context.user === undefined) {
         try {
             const token = req.cookies.token;
             if (token) {
                 const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
                 const user = await User.from_db({ user_id: decoded.id });
                 if (user && (!user.totp_secret || decoded.totp_verified)) {
-                    req.user = user;
+                    req.context.user = user;
+
+                    if (user.role === "student") {
+                        req.context.user_as.student = (await Student.from_user(user))!;
+                    } else if (user.role === "instructor") {
+                        req.context.user_as.instructor = (await Instructor.from_user(user))!;
+                    } else if (user.role === "admin") {
+                        req.context.user_as.admin = (await Admin.from_user(user))!;
+                    }
                 }
             }
         } catch (err) {}
@@ -30,7 +30,7 @@ export async function maybe_auth(req: Request, res: Response, next: NextFunction
 }
 
 export async function require_nototp_auth(req: Request, res: Response, next: NextFunction) {
-    if (req.user === undefined) {
+    if (req.context.user === undefined) {
         try {
             const token = req.cookies.token;
             if (!token) {
@@ -44,7 +44,7 @@ export async function require_nototp_auth(req: Request, res: Response, next: Nex
                 return res.status(401).json({ error: "Unauthorized" });
             }
 
-            req.user = user;
+            req.context.user = user;
 
             next();
         } catch (err) {
@@ -56,7 +56,7 @@ export async function require_nototp_auth(req: Request, res: Response, next: Nex
 }
 
 export async function require_auth(req: Request, res: Response, next: NextFunction) {
-    if (req.user === undefined) {
+    if (req.context.user === undefined) {
         try {
             const token = req.cookies.token;
             if (!token) {
@@ -74,13 +74,30 @@ export async function require_auth(req: Request, res: Response, next: NextFuncti
                 return res.status(401).json({ error: "Unauthorized" });
             }
 
-            req.user = user;
+            req.context.user = user;
+
+            if (user.role === "student") {
+                req.context.user_as.student = (await Student.from_user(user))!;
+            } else if (user.role === "instructor") {
+                req.context.user_as.instructor = (await Instructor.from_user(user))!;
+            } else if (user.role === "admin") {
+                req.context.user_as.admin = (await Admin.from_user(user))!;
+            }
 
             next();
         } catch (err) {
             return res.status(401).json({ error: "Unauthorized" });
         }
     } else {
+        next();
+    }
+}
+
+export function require_user_role(role: UserRole) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        if (!req.context.user || req.context.user.role != role) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
         next();
     }
 }
