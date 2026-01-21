@@ -27,7 +27,9 @@ admin_router.get("/audit_log", require_auth, require_user_role("admin"), async (
 
     const offset = (current_page - 1) * items_per_page;
 
-    let query = "SELECT * FROM AuditLogs";
+    let query = `SELECT al.log_id, al.user_id, u.first_name, u.last_name, al.action, al.date_time 
+                 FROM AuditLogs al 
+                 LEFT JOIN Users u ON al.user_id = u.user_id`;
     let count_query = "SELECT COUNT(*) FROM AuditLogs";
     const params: any[] = [];
     let idx = 1;
