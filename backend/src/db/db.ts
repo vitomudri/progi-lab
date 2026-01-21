@@ -278,6 +278,18 @@ export async function init_database() {
                 );
             `);
 
+            await client.query(`
+                CREATE TABLE StoredFiles (
+                    file_id UUID PRIMARY KEY,
+                    bucket TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    original_name TEXT NOT NULL,
+                    mime_type TEXT NOT NULL,
+                    size BIGINT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
             await client.query("COMMIT");
         } catch (err) {
             await client.query("ROLLBACK");
