@@ -6,7 +6,6 @@ import files_router from "./files.js";
 import instructors_router from "./instructors.js";
 import admin_router from "./admin.js";
 
-
 const router = Router();
 
 router.use("/auth", auth_router);
@@ -15,6 +14,5 @@ router.use("/profile", profile_router);
 router.use("/files", files_router);
 router.use("/instructors", instructors_router);
 router.use("/admin", admin_router);
-
 
 export default router;

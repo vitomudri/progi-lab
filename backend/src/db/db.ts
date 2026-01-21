@@ -1,9 +1,9 @@
 import pg from "pg";
 import { env } from "../env.js";
-import pkg from '../../package.json' with { type: 'json' };
+import pkg from "../../package.json" with { type: "json" };
 import argon2 from "argon2";
 import { randomUUID } from "crypto";
-
+import { User } from "../models/User.js";
 
 export const pool = new pg.Pool({
     user: env.PG_USER,
@@ -14,53 +14,37 @@ export const pool = new pg.Pool({
 });
 
 async function seed_admin(client: pg.PoolClient) {
-  console.log("Seeding admin user if not exists...");
-  const adminEmail = env.ADMIN_EMAIL;
-  const adminPassword = env.ADMIN_PASSWORD;
+    console.log("Seeding admin user if not exists...");
+    const adminEmail = env.ADMIN_EMAIL;
+    const adminPassword = env.ADMIN_PASSWORD;
 
-  console.log("CWD:", process.cwd());
-  console.log("RAW process.env.ADMIN_EMAIL:", process.env.ADMIN_EMAIL);
-  console.log("env.ADMIN_EMAIL:", (env as any).ADMIN_EMAIL);
+    console.log("CWD:", process.cwd());
+    console.log("RAW process.env.ADMIN_EMAIL:", process.env.ADMIN_EMAIL);
+    console.log("env.ADMIN_EMAIL:", (env as any).ADMIN_EMAIL);
 
+    // Ako env nije postavljen, preskoči (ili throw ako želiš)
+    if (!adminEmail || !adminPassword) {
+        console.warn("Admin email or password not set in environment variables. Skipping admin user seeding.");
+        return;
+    }
 
-  // Ako env nije postavljen, preskoči (ili throw ako želiš)
-  if (!adminEmail || !adminPassword) {
-    console.warn("Admin email or password not set in environment variables. Skipping admin user seeding.");
-    return;
-}
+    // Provjeri postoji li već
+    const existing = await client.query(`SELECT 1 FROM users WHERE email = $1`, [adminEmail]);
+    console.log(existing.rows);
+    if (existing.rows.length > 0) return; // idempotentno
 
+    const hash = await argon2.hash(adminPassword);
 
-  // Provjeri postoji li već
-  const existing = await client.query(
-    `SELECT 1 FROM users WHERE email = $1`,
-    [adminEmail]
-  );
-  console.log(existing.rows);
-  if (existing.rows.length > 0) return; // idempotentno
+    console.log("Creating admin user with email:", adminEmail);
 
-  const hash = await argon2.hash(adminPassword);
-
-  console.log("Creating admin user with email:", adminEmail);
-
-  await client.query(
-    `INSERT INTO users
+    await client.query(
+        `INSERT INTO users
       (user_id, first_name, last_name, email, password_hash, registration_date, status, role, audit_log_enabled, must_change_password, totp_secret)
      VALUES
       ($1, $2, $3, $4, $5, CURRENT_DATE, $6, $7, $8, $9, NULL)`,
-    [
-      randomUUID(),
-      "System",
-      "Admin",
-      adminEmail,
-      hash,
-      "active",
-      "admin",
-      true,
-      true
-    ]
-  );
+        [randomUUID(), "System", "Admin", adminEmail, hash, "active", "admin", true, true]
+    );
 }
-
 
 export async function init_database() {
     const client = await pool.connect();
@@ -93,7 +77,6 @@ export async function init_database() {
                     registration_date DATE DEFAULT CURRENT_DATE,
                     status VARCHAR,
                     role VARCHAR,
-                    audit_log_enabled BOOLEAN DEFAULT false,
                     must_change_password BOOLEAN DEFAULT true,
                     totp_secret VARCHAR,
                     CONSTRAINT email_key UNIQUE(email),
@@ -173,7 +156,6 @@ export async function init_database() {
                         ON DELETE CASCADE
                 );
             `);
-
 
             await client.query(`
                 CREATE TABLE Lessons (
@@ -343,30 +325,15 @@ export async function init_database() {
                 );
             `);
 
-            await seed_admin(client);
-
             await client.query("COMMIT");
         } catch (err) {
             await client.query("ROLLBACK");
             throw err;
         }
     } else {
-        try {
-           await client.query("BEGIN");
-           await seed_admin(client);
-           await client.query("COMMIT");
-        } catch (err) {
-           await client.query("ROLLBACK");
-           throw err;
-       }
-       await client.query(`
-       ALTER TABLE instructors
-       ADD COLUMN IF NOT EXISTS verification_file_ids JSONB DEFAULT '[]'::jsonb;` );
-
         /** @todo Database exists, but might be for an older version of the app? Extra checks need to be made; If need be, upgrade logic should be implemented here. */
     }
 
-
     client.release();
     console.log("Database init finished.");
-};
+}

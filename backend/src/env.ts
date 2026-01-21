@@ -37,7 +37,6 @@ const schema = z.object({
     S3_REGION: z.string(),
     ADMIN_EMAIL: z.string(),
     ADMIN_PASSWORD: z.string().min(8),
-
 });
 
 if (!PRODUCTION) {

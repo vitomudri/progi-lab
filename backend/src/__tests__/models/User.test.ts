@@ -42,7 +42,6 @@ describe("User Model", () => {
             expect(user.email).toBe(testEmail);
             expect(user.role).toBe("student");
             expect(user.status).toBeNull();
-            expect(user.audit_log_enabled).toBe(true);
             expect(user.must_change_password).toBe(true);
             expect(user.totp_secret).toBeNull();
             expect(user.user_id).toBeDefined();
@@ -180,7 +179,6 @@ describe("User Model", () => {
 
             originalUser.status = "active";
             originalUser.role = "instructor";
-            originalUser.audit_log_enabled = false;
             originalUser.must_change_password = false;
 
             await originalUser.save();
@@ -189,7 +187,6 @@ describe("User Model", () => {
 
             expect(retrievedUser?.status).toBe("active");
             expect(retrievedUser?.role).toBe("instructor");
-            expect(retrievedUser?.audit_log_enabled).toBe(false);
             expect(retrievedUser?.must_change_password).toBe(false);
         }, 30000);
     });
@@ -413,7 +410,6 @@ describe("User Model", () => {
 
             user.status = "active";
             user.role = "admin";
-            user.audit_log_enabled = false;
             user.must_change_password = false;
 
             await user.save();
@@ -425,7 +421,6 @@ describe("User Model", () => {
             expect(retrieved?.email).toBe(testEmail);
             expect(retrieved?.status).toBe("active");
             expect(retrieved?.role).toBe("admin");
-            expect(retrieved?.audit_log_enabled).toBe(false);
             expect(retrieved?.must_change_password).toBe(false);
         }, 30000);
 

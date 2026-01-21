@@ -7,7 +7,7 @@ import type { UUID } from "crypto";
 const profile_router = express.Router();
 
 profile_router.get("/me", require_auth, async (req, res) => {
-    const user = req.user!;
+    const user = req.context.user!;
     return res.json({
         id: user.user_id,
         ime: user.first_name,
@@ -23,7 +23,7 @@ profile_router.get("/me", require_auth, async (req, res) => {
 });
 
 profile_router.get("/:id", require_auth, async (req, res) => {
-    const user = req.user!;
+    const user = req.context.user!;
     const maybe_requested_id = req.params.id;
 
     try {
