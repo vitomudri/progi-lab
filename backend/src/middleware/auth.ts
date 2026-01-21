@@ -93,11 +93,16 @@ export async function require_auth(req: Request, res: Response, next: NextFuncti
     }
 }
 
-export function require_user_role(role: UserRole) {
+export function require_user_roles(...roles: UserRole[]) {
     return (req: Request, res: Response, next: NextFunction) => {
-        if (!req.context.user || req.context.user.role != role) {
+        if (!req.context.user) {
             return res.status(401).json({ error: "Unauthorized" });
         }
+
+        if (!roles.includes(req.context.user.role)) {
+            return res.status(403).json({ error: "Forbidden" });
+        }
+        
         next();
     }
 }

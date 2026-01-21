@@ -13,6 +13,7 @@ profile_router.get("/me", require_auth, async (req, res) => {
         ime: user.first_name,
         prezime: user.last_name,
         email: user.email,
+        role: user.role,
         skillLevel: "Početnik",
         allergens: [],
         favoriteCuisines: [],

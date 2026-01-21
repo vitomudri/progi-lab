@@ -1,6 +1,7 @@
 import pg from "pg";
 import { env } from "../env.js";
-import pkg from '../../package.json' with { type: 'json' };
+import pkg from "../../package.json" with { type: "json" };
+import { User } from "../models/User.js";
 
 export const pool = new pg.Pool({
     user: env.PG_USER,
@@ -56,6 +57,7 @@ export async function init_database() {
                     specialization VARCHAR,
                     rating NUMERIC(3,2),
                     verified BOOLEAN DEFAULT false,
+                    verification_file_ids JSONB DEFAULT '[]'::jsonb,
                     CONSTRAINT instructor_id_fkey FOREIGN KEY(instructor_id)
                         REFERENCES Users(user_id)
                         ON UPDATE NO ACTION
@@ -119,7 +121,6 @@ export async function init_database() {
                         ON DELETE CASCADE
                 );
             `);
-
 
             await client.query(`
                 CREATE TABLE Lessons (
@@ -290,6 +291,10 @@ export async function init_database() {
             `);
 
             await client.query("COMMIT");
+
+            let user = await User.new({"email": env.ADMIN_EMAIL, "first_name": "System", "last_name": "Admin"});
+            user.role = "admin";
+            await user.save();
         } catch (err) {
             await client.query("ROLLBACK");
             throw err;
@@ -300,4 +305,4 @@ export async function init_database() {
 
     client.release();
     console.log("Database init finished.");
-};
+}
