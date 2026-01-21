@@ -45,6 +45,14 @@ const log_map: Map<string, string> = new Map([
 
     [make_key(true, "/admin/audit_log"), "Audit log fetched"],
     [make_key(false, "/admin/audit_log"), "Audit log fetch failed"],
+    [make_key(true, "/admin/instructors/pending"), "Pending instructors fetched"],
+    [make_key(false, "/admin/instructors/pending"), "Pending instructors fetch failed"],
+    [make_key(true, "/admin/instructors/:id/approve"), "Pending instructor approved"],
+    [make_key(false, "/admin/instructors/:id/approve"), "Pending instructor approval failed"],
+    [make_key(true, "/admin/instructors/:id/reject"), "Pending instructor rejected"],
+    [make_key(false, "/admin/instructors/:id/reject"), "Pending instructor rejection failed"],
+    [make_key(true, "/admin/files/:file_id/url"), "Signed file url generated"],
+    [make_key(false, "/admin/files/:file_id/url"), "Signed file url generation failed"],
 ]);
 
 export default async function log(req: Request, res: Response, next: NextFunction) {
