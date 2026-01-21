@@ -12,7 +12,7 @@ export type UserStatus = "active" | "blocked" | "unverified" | null;
 export type UserRole = "student" | "instructor" | "admin";
 
 export class User {
-    private is_new: boolean = false;
+    is_new: boolean = false;
     user_id: UUID;
     first_name: string;
     last_name: string;
@@ -21,11 +21,10 @@ export class User {
     registration_date: Date;
     status: UserStatus;
     role: UserRole;
-    audit_log_enabled: boolean;
     must_change_password: boolean;
     totp_secret: string | null;
 
-    private constructor(
+    protected constructor(
         is_new: boolean,
         user_id: UUID,
         first_name: string,
@@ -35,7 +34,6 @@ export class User {
         registration_date: Date,
         status: UserStatus,
         role: UserRole,
-        audit_log_enabled: boolean,
         must_change_password: boolean,
         totp_secret: string | null
     ) {
@@ -48,7 +46,6 @@ export class User {
         this.registration_date = registration_date;
         this.status = status;
         this.role = role;
-        this.audit_log_enabled = audit_log_enabled;
         this.must_change_password = must_change_password;
         this.totp_secret = totp_secret;
     }
@@ -66,7 +63,6 @@ export class User {
             new Date(),
             null,
             "student",
-            true,
             true,
             null
         );
@@ -97,7 +93,6 @@ export class User {
                     new Date(row.registration_date),
                     row.status,
                     row.role,
-                    row.audit_log_enabled,
                     row.must_change_password,
                     row.totp_secret || null
                 );
@@ -132,8 +127,8 @@ export class User {
     async save() {
         if (this.is_new) {
             await pool.query(
-                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "audit_log_enabled", "must_change_password", "totp_secret")
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "must_change_password", "totp_secret")
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
                 [
                     this.user_id,
                     this.first_name,
@@ -143,7 +138,6 @@ export class User {
                     this.registration_date,
                     this.status,
                     this.role,
-                    this.audit_log_enabled,
                     this.must_change_password,
                     this.totp_secret
                 ]
@@ -151,7 +145,7 @@ export class User {
             this.is_new = false;
         } else {
             await pool.query(
-                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "audit_log_enabled" = $9, "must_change_password" = $10, "totp_secret" = $11
+                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "must_change_password" = $9, "totp_secret" = $10
                  WHERE "user_id" = $1`,
                 [
                     this.user_id,
@@ -162,7 +156,6 @@ export class User {
                     this.registration_date,
                     this.status,
                     this.role,
-                    this.audit_log_enabled,
                     this.must_change_password,
                     this.totp_secret
                 ]
@@ -214,5 +207,344 @@ export class User {
     async set_password(input: string) {
         this.password_hash = await argon2.hash(input);
         this.must_change_password = false;
+    }
+}
+
+export class Student extends User {
+    skill_level: string | null;
+    dietary_preferences: string | null;
+    favorite_cuisines: string | null;
+    allergens: string | null;
+
+    static async from_user(user: User): Promise<Student | null> {
+        if (user.role != "student") { return null; }
+
+        const res = await pool.query(
+            `SELECT "skill_level", "dietary_preferences", "favorite_cuisines", "allergens" FROM "Students" WHERE "student_id" = $1`,
+            [user.user_id]
+        );
+
+        const data = res.rows.length > 0 ? res.rows[0] : {};
+
+        return new Student(
+            user.is_new,
+            user.user_id,
+            user.first_name,
+            user.last_name,
+            user.email,
+            user.password_hash,
+            user.registration_date,
+            user.status,
+            user.role,
+            user.must_change_password,
+            user.totp_secret,
+            data.skill_level || null,
+            data.dietary_preferences || null,
+            data.favorite_cuisines || null,
+            data.allergens || null
+        );
+    }
+
+    async save() {
+        const is_new = this.is_new;
+        await super.save();
+
+        const save_insert = async () => {
+            await pool.query(
+                `INSERT INTO "Students" ("student_id", "skill_level", "dietary_preferences", "favorite_cuisines", "allergens")
+                    VALUES ($1, $2, $3, $4, $5)`,
+                [
+                    this.user_id,
+                    this.skill_level,
+                    this.dietary_preferences,
+                    this.favorite_cuisines,
+                    this.allergens
+                ]
+            );
+        };
+
+        const save_update = async () => {
+            await pool.query(
+                `UPDATE "Students" SET "skill_level" = $2, "dietary_preferences" = $3, "favorite_cuisines" = $4, "allergens" = $5
+                    WHERE "student_id" = $1`,
+                [
+                    this.user_id,
+                    this.skill_level,
+                    this.dietary_preferences,
+                    this.favorite_cuisines,
+                    this.allergens
+                ]
+            );
+        };
+
+        if (is_new) {
+            await save_insert();
+        } else {
+            const student_exists = await pool.query(
+                `SELECT 1 FROM "Students" WHERE "student_id" = $1`,
+                [this.user_id]
+            );
+            if (student_exists.rows.length > 0) {
+                await save_update();
+            } else {
+                await save_insert();
+            }
+        }
+    }
+
+    protected constructor(
+        is_new: boolean,
+        user_id: UUID,
+        first_name: string,
+        last_name: string,
+        email: string,
+        password_hash: string,
+        registration_date: Date,
+        status: UserStatus,
+        role: UserRole,
+        must_change_password: boolean,
+        totp_secret: string | null,
+        skill_level: string | null,
+        dietary_preferences: string | null,
+        favorite_cuisines: string | null,
+        allergens: string | null
+    ) {
+        super(
+            is_new,
+            user_id,
+            first_name,
+            last_name,
+            email,
+            password_hash,
+            registration_date,
+            status,
+            role,
+            must_change_password,
+            totp_secret
+        );
+        this.skill_level = skill_level;
+        this.dietary_preferences = dietary_preferences;
+        this.favorite_cuisines = favorite_cuisines;
+        this.allergens = allergens;
+    }
+}
+
+export class Instructor extends User {
+    biography: string | null;
+    specialization: string | null;
+    rating: number | null;
+    verified: boolean;
+
+    static async from_user(user: User): Promise<Instructor | null> {
+        if (user.role != "instructor") { return null; }
+
+        const result = await pool.query(
+            `SELECT "biography", "specialization", "rating", "verified" FROM "Instructors" WHERE "instructor_id" = $1`,
+            [user.user_id]
+        );
+
+        const instructor_data = result.rows.length > 0 ? result.rows[0] : {};
+
+        return new Instructor(
+            user.is_new,
+            user.user_id,
+            user.first_name,
+            user.last_name,
+            user.email,
+            user.password_hash,
+            user.registration_date,
+            user.status,
+            user.role,
+            user.must_change_password,
+            user.totp_secret,
+            instructor_data.biography || null,
+            instructor_data.specialization || null,
+            instructor_data.rating || null,
+            instructor_data.verified || false
+        );
+    }
+
+    async save() {
+        const is_new = this.is_new;
+        await super.save();
+
+        const save_insert = async () => {
+            await pool.query(
+                `INSERT INTO "Instructors" ("instructor_id", "biography", "specialization", "rating", "verified")
+                    VALUES ($1, $2, $3, $4, $5)`,
+                [
+                    this.user_id,
+                    this.biography,
+                    this.specialization,
+                    this.rating,
+                    this.verified
+                ]
+            );
+        };
+
+        const save_update = async () => {
+            await pool.query(
+                `UPDATE "Instructors" SET "biography" = $2, "specialization" = $3, "rating" = $4, "verified" = $5
+                    WHERE "instructor_id" = $1`,
+                [
+                    this.user_id,
+                    this.biography,
+                    this.specialization,
+                    this.rating,
+                    this.verified
+                ]
+            );
+        };
+
+        if (is_new) {
+            await save_insert();
+        } else {
+            const instructor_exists = await pool.query(
+                `SELECT 1 FROM "Instructors" WHERE "instructor_id" = $1`,
+                [this.user_id]
+            );
+            if (instructor_exists.rows.length > 0) {
+                await save_update();
+            } else {
+                await save_insert();
+            }
+        }
+    }
+
+    protected constructor(
+        is_new: boolean,
+        user_id: UUID,
+        first_name: string,
+        last_name: string,
+        email: string,
+        password_hash: string,
+        registration_date: Date,
+        status: UserStatus,
+        role: UserRole,
+        must_change_password: boolean,
+        totp_secret: string | null,
+        biography: string | null,
+        specialization: string | null,
+        rating: number | null,
+        verified: boolean
+    ) {
+        super(
+            is_new,
+            user_id,
+            first_name,
+            last_name,
+            email,
+            password_hash,
+            registration_date,
+            status,
+            role,
+            must_change_password,
+            totp_secret
+        );
+        this.biography = biography;
+        this.specialization = specialization;
+        this.rating = rating;
+        this.verified = verified;
+    }
+}
+
+export class Admin extends User {
+    access_level: string | null;
+
+    static async from_user(user: User): Promise<Admin | null> {
+        if (user.role != "admin") { return null; }
+
+        const result = await pool.query(
+            `SELECT "access_level" FROM "Admins" WHERE "admin_id" = $1`,
+            [user.user_id]
+        );
+
+        const admin_data = result.rows.length > 0 ? result.rows[0] : {};
+
+        return new Admin(
+            user.is_new,
+            user.user_id,
+            user.first_name,
+            user.last_name,
+            user.email,
+            user.password_hash,
+            user.registration_date,
+            user.status,
+            user.role,
+            user.must_change_password,
+            user.totp_secret,
+            admin_data.access_level || null
+        );
+    }
+
+    async save() {
+        const is_new = this.is_new;
+        await super.save();
+
+        const save_insert = async () => {
+            await pool.query(
+                `INSERT INTO "Admins" ("admin_id", "access_level")
+                    VALUES ($1, $2)`,
+                [
+                    this.user_id,
+                    this.access_level
+                ]
+            );
+        };
+
+        const save_update = async () => {
+            await pool.query(
+                `UPDATE "Admins" SET "access_level" = $2
+                    WHERE "admin_id" = $1`,
+                [
+                    this.user_id,
+                    this.access_level
+                ]
+            );
+        };
+
+        if (is_new) {
+            await save_insert();
+        } else {
+            const admin_exists = await pool.query(
+                `SELECT 1 FROM "Admins" WHERE "admin_id" = $1`,
+                [this.user_id]
+            );
+            if (admin_exists.rows.length > 0) {
+                await save_update();
+            } else {
+                await save_insert();
+            }
+        }
+    }
+
+    protected constructor(
+        is_new: boolean,
+        user_id: UUID,
+        first_name: string,
+        last_name: string,
+        email: string,
+        password_hash: string,
+        registration_date: Date,
+        status: UserStatus,
+        role: UserRole,
+        must_change_password: boolean,
+        totp_secret: string | null,
+        access_level: string | null
+    ) {
+        super(
+            is_new,
+            user_id,
+            first_name,
+            last_name,
+            email,
+            password_hash,
+            registration_date,
+            status,
+            role,
+            must_change_password,
+            totp_secret
+        );
+        this.access_level = access_level;
     }
 }
