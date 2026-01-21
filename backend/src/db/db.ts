@@ -41,7 +41,6 @@ export async function init_database() {
                     registration_date DATE DEFAULT CURRENT_DATE,
                     status VARCHAR,
                     role VARCHAR,
-                    audit_log_enabled BOOLEAN DEFAULT false,
                     must_change_password BOOLEAN DEFAULT true,
                     totp_secret VARCHAR,
                     CONSTRAINT email_key UNIQUE(email),

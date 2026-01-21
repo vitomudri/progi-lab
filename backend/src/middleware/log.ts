@@ -42,13 +42,15 @@ const log_map: Map<string, string> = new Map([
     [make_key(false, "/recipe/get/:recipe_id"), "Recipe fetch failed"],
     [make_key(true, "/recipe/create"), "Recipe created"],
     [make_key(false, "/recipe/create"), "Recipe creation failed"],
+
+    [make_key(true, "/admin/audit_log"), "Audit log fetched"],
+    [make_key(false, "/admin/audit_log"), "Audit log fetch failed"],
 ]);
 
 export default async function log(req: Request, res: Response, next: NextFunction) {
-    if (req.context.user !== undefined && req.context.user.audit_log_enabled) {
+    if (req.context.user !== undefined) {
         const user = req.context.user!;
         const route_path = req.route?.path || req.path;
-        console.log(route_path);
         res.on("finish", async () => {
             let success = res.statusCode < 400;
             let log: string;

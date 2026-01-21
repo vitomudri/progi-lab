@@ -21,7 +21,6 @@ export class User {
     registration_date: Date;
     status: UserStatus;
     role: UserRole;
-    audit_log_enabled: boolean;
     must_change_password: boolean;
     totp_secret: string | null;
 
@@ -35,7 +34,6 @@ export class User {
         registration_date: Date,
         status: UserStatus,
         role: UserRole,
-        audit_log_enabled: boolean,
         must_change_password: boolean,
         totp_secret: string | null
     ) {
@@ -48,7 +46,6 @@ export class User {
         this.registration_date = registration_date;
         this.status = status;
         this.role = role;
-        this.audit_log_enabled = audit_log_enabled;
         this.must_change_password = must_change_password;
         this.totp_secret = totp_secret;
     }
@@ -66,7 +63,6 @@ export class User {
             new Date(),
             null,
             "student",
-            true,
             true,
             null
         );
@@ -97,7 +93,6 @@ export class User {
                     new Date(row.registration_date),
                     row.status,
                     row.role,
-                    row.audit_log_enabled,
                     row.must_change_password,
                     row.totp_secret || null
                 );
@@ -132,8 +127,8 @@ export class User {
     async save() {
         if (this.is_new) {
             await pool.query(
-                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "audit_log_enabled", "must_change_password", "totp_secret")
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "must_change_password", "totp_secret")
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
                 [
                     this.user_id,
                     this.first_name,
@@ -143,7 +138,6 @@ export class User {
                     this.registration_date,
                     this.status,
                     this.role,
-                    this.audit_log_enabled,
                     this.must_change_password,
                     this.totp_secret
                 ]
@@ -151,7 +145,7 @@ export class User {
             this.is_new = false;
         } else {
             await pool.query(
-                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "audit_log_enabled" = $9, "must_change_password" = $10, "totp_secret" = $11
+                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "must_change_password" = $9, "totp_secret" = $10
                  WHERE "user_id" = $1`,
                 [
                     this.user_id,
@@ -162,7 +156,6 @@ export class User {
                     this.registration_date,
                     this.status,
                     this.role,
-                    this.audit_log_enabled,
                     this.must_change_password,
                     this.totp_secret
                 ]
@@ -243,7 +236,6 @@ export class Student extends User {
             user.registration_date,
             user.status,
             user.role,
-            user.audit_log_enabled,
             user.must_change_password,
             user.totp_secret,
             data.skill_level || null,
@@ -310,7 +302,6 @@ export class Student extends User {
         registration_date: Date,
         status: UserStatus,
         role: UserRole,
-        audit_log_enabled: boolean,
         must_change_password: boolean,
         totp_secret: string | null,
         skill_level: string | null,
@@ -328,7 +319,6 @@ export class Student extends User {
             registration_date,
             status,
             role,
-            audit_log_enabled,
             must_change_password,
             totp_secret
         );
@@ -365,7 +355,6 @@ export class Instructor extends User {
             user.registration_date,
             user.status,
             user.role,
-            user.audit_log_enabled,
             user.must_change_password,
             user.totp_secret,
             instructor_data.biography || null,
@@ -432,7 +421,6 @@ export class Instructor extends User {
         registration_date: Date,
         status: UserStatus,
         role: UserRole,
-        audit_log_enabled: boolean,
         must_change_password: boolean,
         totp_secret: string | null,
         biography: string | null,
@@ -450,7 +438,6 @@ export class Instructor extends User {
             registration_date,
             status,
             role,
-            audit_log_enabled,
             must_change_password,
             totp_secret
         );
@@ -484,7 +471,6 @@ export class Admin extends User {
             user.registration_date,
             user.status,
             user.role,
-            user.audit_log_enabled,
             user.must_change_password,
             user.totp_secret,
             admin_data.access_level || null
@@ -542,7 +528,6 @@ export class Admin extends User {
         registration_date: Date,
         status: UserStatus,
         role: UserRole,
-        audit_log_enabled: boolean,
         must_change_password: boolean,
         totp_secret: string | null,
         access_level: string | null
@@ -557,7 +542,6 @@ export class Admin extends User {
             registration_date,
             status,
             role,
-            audit_log_enabled,
             must_change_password,
             totp_secret
         );
