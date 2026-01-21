@@ -34,7 +34,10 @@ const schema = z.object({
     S3_ACCESS_KEY: z.string(),
     S3_SECRET_KEY: z.string(),
     S3_BUCKET_NAME: z.string(),
-    S3_REGION: z.string()
+    S3_REGION: z.string(),
+    ADMIN_EMAIL: z.string(),
+    ADMIN_PASSWORD: z.string().min(8),
+
 });
 
 if (!PRODUCTION) {

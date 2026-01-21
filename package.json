@@ -17,9 +17,14 @@
         "lint": "npm --workspaces run lint"
     },
     "devDependencies": {
+        "@types/multer": "^2.0.0",
         "concurrently": "^8.2.0",
         "eslint": "^8.56.0",
         "tsx": "^4.20.6",
         "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "@aws-sdk/s3-request-presigner": "^3.972.0",
+        "multer": "^2.0.2"
     }
 }
