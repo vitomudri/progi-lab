@@ -215,8 +215,8 @@ search_router.get("/recipes", async (req, res) => {
 search_router.get("/tags", async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT tab_id, name
-            FROM Tabs
+            SELECT tag_id, name
+            FROM Tags
             ORDER BY name ASC;
         `);
 
