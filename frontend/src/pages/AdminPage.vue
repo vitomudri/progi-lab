@@ -40,7 +40,7 @@
       <div class="audit-controls">
         <input
           v-model="userIdFilter"
-          placeholder="Filter po user_id (npr: 1,2,5)"
+          placeholder="Filter po user_id"
         />
 <label class="audit-label">Zapisa po stranici:</label>
         <select v-model.number="itemsPerPage">
@@ -181,8 +181,8 @@ onMounted(fetchAuditLogs);
 .admin-card {
   background-color: #FFFCF4;
   border-radius: 1.5rem;
-  padding: 2rem;         
-  margin-bottom: 2rem;    
+  padding: 2rem;
+  margin-bottom: 2rem;
 }
 
 .admin-card h2 {
@@ -209,7 +209,7 @@ h1 {
 }
 
 .vertical-list li {
-  display: block;          
+  display: block;
   margin: 0.4rem 0;
   line-height: 1.6;
   padding: 0.35rem 0;
@@ -225,9 +225,9 @@ h1 {
 
 .audit-controls input {
   padding: 0.6rem 0.8rem;
-  border-radius: 13px;     
+  border-radius: 13px;
   border: 1px solid #ccc;
-  min-width: 260px;        
+  min-width: 260px;
   font-size: 0.9rem;
 }
 .audit-controls input:focus {
@@ -236,11 +236,11 @@ h1 {
 }
 
 .audit-controls select {
-  appearance: none;          
+  appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
 
-  background-color: #DED6C3; 
+  background-color: #DED6C3;
   color: #000;
   border: none;
   border-radius: 12px;
@@ -262,7 +262,7 @@ h1 {
 
 
 .audit-controls button {
-  background-color: #DED6C3; 
+  background-color: #DED6C3;
   color: #000;
   border: none;
   border-radius: 12px;
@@ -272,7 +272,7 @@ h1 {
 }
 
 .audit-controls button:hover {
-  background-color: #D2C8B0; 
+  background-color: #D2C8B0;
 }
 
 
