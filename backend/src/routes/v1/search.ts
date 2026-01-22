@@ -212,4 +212,19 @@ search_router.get("/recipes", async (req, res) => {
     }
 });
 
+search_router.get("/tags", async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT tab_id, name
+            FROM Tabs
+            ORDER BY name ASC;
+        `);
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default search_router;
