@@ -1,7 +1,7 @@
 import pg from "pg";
 import { env } from "../env.js";
 import pkg from "../../package.json" with { type: "json" };
-import { User } from "../models/User.js";
+import { User, Admin } from "../models/User.js";
 
 export const pool = new pg.Pool({
     user: env.PG_USER,
@@ -295,6 +295,9 @@ export async function init_database() {
             let user = await User.new({"email": env.ADMIN_EMAIL, "first_name": "System", "last_name": "Admin"});
             user.role = "admin";
             await user.save();
+
+            let admin = (await Admin.from_user(user))!;
+            await admin.save();
         } catch (err) {
             await client.query("ROLLBACK");
             throw err;
