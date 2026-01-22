@@ -14,7 +14,7 @@
                 <a href="#">Recepti</a>
             </div>
         </li>
-        <li><a href="#">Instruktori</a></li>
+        <li><router-link to="/instructors">Instruktori</router-link></li>
       </ul>
 
       <!-- Logo u sredini -->
@@ -24,7 +24,7 @@
 
       <!-- Desna strana -->
       <ul class="nav-right">
-        <li><a href="#">O nama</a></li>
+        <li><router-link to="/about">O nama</router-link></li>
         <li class="search" @click="toggleSearch">
           <i class="fa-regular fa-magnifying-glass"></i>
         </li>
