@@ -27,6 +27,9 @@ export async function init_database() {
         try {
             await client.query("BEGIN");
 
+            await client.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+            await client.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
+
             await client.query(`
                 INSERT INTO metadata (key, value)
                 VALUES ('version', '${pkg.version}');
@@ -49,6 +52,10 @@ export async function init_database() {
                     CONSTRAINT role_check CHECK (role IN ('student', 'instructor', 'admin'))
                 );
             `);
+
+            await client.query(`CREATE INDEX idx_users_first_name_trgm ON Users USING gin(first_name gin_trgm_ops);`);
+            await client.query(`CREATE INDEX idx_users_last_name_trgm ON Users USING gin(last_name gin_trgm_ops);`);
+            await client.query(`CREATE INDEX idx_users_user_id_trgm ON Users USING gin(user_id gin_trgm_ops);`);
 
             await client.query(`
             CREATE TABLE Instructors (
@@ -109,6 +116,9 @@ export async function init_database() {
                 );
             `);
 
+            await client.query(`CREATE INDEX idx_courses_title_trgm ON Courses USING gin(title gin_trgm_ops);`);
+            await client.query(`CREATE INDEX idx_courses_description_trgm ON Courses USING gin(description gin_trgm_ops);`);
+
             await client.query(`
                 CREATE TABLE Modules (
                     module_id SERIAL PRIMARY KEY,
@@ -121,6 +131,9 @@ export async function init_database() {
                         ON DELETE CASCADE
                 );
             `);
+
+            await client.query(`CREATE INDEX idx_modules_title_trgm ON Modules USING gin(title gin_trgm_ops);`);
+            await client.query(`CREATE INDEX idx_modules_description_trgm ON Modules USING gin(description gin_trgm_ops);`);
 
             await client.query(`
                 CREATE TABLE Lessons (
@@ -139,6 +152,9 @@ export async function init_database() {
                 );
             `);
 
+            await client.query(`CREATE INDEX idx_lessons_title_trgm ON Lessons USING gin(title gin_trgm_ops);`);
+            await client.query(`CREATE INDEX idx_lessons_description_trgm ON Lessons USING gin(description gin_trgm_ops);`);
+
             await client.query(`
                 CREATE TABLE Recipes (
                     recipe_id VARCHAR PRIMARY KEY,
@@ -153,6 +169,9 @@ export async function init_database() {
                         ON DELETE CASCADE
                 );
             `);
+
+            await client.query(`CREATE INDEX idx_recipes_name_trgm ON Recipes USING gin(name gin_trgm_ops);`);
+            await client.query(`CREATE INDEX idx_recipes_description_trgm ON Recipes USING gin(description gin_trgm_ops);`);
 
             await client.query(`
                 CREATE TABLE LiveWorkshops (
@@ -256,23 +275,39 @@ export async function init_database() {
             `);
 
             await client.query(`
-                CREATE TABLE Tabs (
-                    tab_id SERIAL PRIMARY KEY,
+                CREATE TABLE Tags (
+                    tag_id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
                     name VARCHAR
                 );
             `);
 
             await client.query(`
-                CREATE TABLE RecipesTabs (
+                CREATE TABLE StudentTags (
                     student_id VARCHAR NOT NULL,
-                    tab_id INTEGER NOT NULL,
-                    CONSTRAINT student_tab_pkey PRIMARY KEY(student_id, tab_id),
+                    tag_id VARCHAR NOT NULL,
+                    CONSTRAINT student_tag_pkey PRIMARY KEY(student_id, tag_id),
                     CONSTRAINT student_id_fkey FOREIGN KEY(student_id)
-                        REFERENCES Users(user_id)
+                        REFERENCES Students(student_id)
                         ON UPDATE NO ACTION
                         ON DELETE CASCADE,
-                    CONSTRAINT tab_id_fkey FOREIGN KEY(tab_id)
-                        REFERENCES Tabs(tab_id)
+                    CONSTRAINT tag_id_fkey FOREIGN KEY(tag_id)
+                        REFERENCES Tags(tag_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE
+                );
+            `);
+
+            await client.query(`
+                CREATE TABLE RecipesTags (
+                    recipe_id VARCHAR NOT NULL,
+                    tag_id VARCHAR NOT NULL,
+                    CONSTRAINT recipe_tag_pkey PRIMARY KEY(recipe_id, tag_id),
+                    CONSTRAINT recipe_id_fkey FOREIGN KEY(recipe_id)
+                        REFERENCES Recipes(recipe_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+                    CONSTRAINT tag_id_fkey FOREIGN KEY(tag_id)
+                        REFERENCES Tags(tag_id)
                         ON UPDATE NO ACTION
                         ON DELETE CASCADE
                 );
