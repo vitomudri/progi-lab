@@ -41,9 +41,13 @@
     <!-- AUDIT -->
     <section class="admin-card">
       <h2>Audit log</h2>
-      <ul class="vertical-list">
-        <li v-for="(log, index) in auditLogs" :key="index">
-          {{ log }}
+
+      <p v-if="loading">Učitavanje audit loga...</p>
+      <p v-if="error" class="error">{{ error }}</p>
+
+      <ul v-if="!loading && !error" class="vertical-list">
+        <li v-for="log in auditLogs" :key="log.log_id">
+          {{ log.date_time }} – {{ log.action }}
         </li>
       </ul>
     </section>
@@ -51,10 +55,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
-/* MOCK PODACI – frontend demo */
-
+/* MOCK PODACI – OSTAJU */
 const instructors = ref([
   { id: 1, email: "instructor1@example.com" },
   { id: 2, email: "instructor2@example.com" }
@@ -74,18 +77,43 @@ const courses = ref([
   { id: 2, title: "Napredni sushi", instructor: "Instruktor B" }
 ]);
 
-const auditLogs = ref([
-  "Admin se prijavio",
-  "Instruktor dodao novi tečaj",
-  "Korisnik se registrirao",
-  "Promijenjena lozinka"
-]);
+/* AUDIT – BACKEND */
+const auditLogs = ref<any[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+async function fetchAuditLogs() {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const res = await fetch(
+      "/api/v1/admin/audit_log?current_page=1&items_per_page=20",
+      { credentials: "include" }
+    );
+
+    if (!res.ok) {
+      throw new Error("Greška pri dohvaćanju audit loga");
+    }
+
+    const data = await res.json();
+    auditLogs.value = data.result;
+  } catch (err: any) {
+    error.value = err.message || "Greška pri dohvaćanju audit loga";
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(() => {
+  fetchAuditLogs();
+});
 </script>
 
 <style scoped>
 .admin-page-wrapper {
-  min-height: calc(100vh - 140px);
-  padding: 2rem;
+  min-height: 100vh;
+  padding: 2rem 2rem 5rem;
   background-color: #F5F1E5;
   font-family: 'Rajdhani', sans-serif;
   color: #000;
@@ -119,23 +147,19 @@ h1 {
   list-style-type: disc;
   padding-left: 1.2rem;
   margin: 0.3rem 0 1.2rem 0;
-  display: block !important;
+  display: block;
 }
 
 .vertical-list li {
-  display: list-item;
+  display: block;
   margin: 0.2rem 0;
   line-height: 1.4;
   text-align: left;
-
-  padding: 0.25rem 0.4rem;   
-  box-sizing: border-box;
-
-  transition:
-    background-color 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+  padding: 0.25rem 0.4rem;
 }
 
-
+.error {
+  color: #b00020;
+  margin-bottom: 0.5rem;
+}
 </style>
