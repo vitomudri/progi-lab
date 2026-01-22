@@ -1,4 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import Instructors from "@/pages/Instructors.vue";
+import About from '@/pages/About.vue'
+import AdminPage from '@/pages/AdminPage.vue'
 import Home from '@/pages/Home.vue'
 import ParticipantProfile from '@/pages/ParticipantProfile.vue'
 import LoginPage from '@/pages/LoginPage.vue'
@@ -7,7 +10,7 @@ import TwoFAPage from '@/pages/TwoFAPage.vue'
 import TwoFASettings from '@/pages/TwoFASettings.vue'
 import InstructorProfile from '@/pages/InstructorProfile.vue'
 import ChangePassword from '@/pages/ChangePassword.vue'
-import AddRecipe from '@/pages/AddRecipe.vue' // ✅ NOVO DODANO
+import AddRecipe from '@/pages/AddRecipe.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -35,13 +38,19 @@ const routes: RouteRecordRaw[] = [
     name: 'TwoFA',
     component: TwoFAPage
   },
+
   {
     path: '/2fa-settings',
     name: 'TwoFASettings',
     component: TwoFASettings
   },
   {
-    path: '/instructor-profile',
+    path: "/instructors",
+    name: "Instructors",
+    component: Instructors
+  },
+  {
+    path: '/instructor/:id',
     name: 'InstructorProfile',
     component: InstructorProfile
   },
@@ -56,10 +65,22 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/RecipePage.vue')
   },
   {
-    path: '/add-recipe', // ✅ NOVA RUTA
+    path: '/add-recipe',
     name: 'AddRecipe',
     component: AddRecipe
-  }
+  },
+  {
+  path: '/admin',
+  name: 'Admin',
+  component: AdminPage
+},
+{
+  path: '/about',
+  name: 'About',
+  component: About
+},
+
+
 ]
 
 const router = createRouter({
