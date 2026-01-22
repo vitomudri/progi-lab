@@ -1,6 +1,7 @@
-import { randomBytes, randomUUID, type UUID } from "crypto";
+import { randomUUID, type UUID } from "crypto";
 import { pool } from "../db/db.js";
 import { EmailBuilder } from "../email/email.js";
+import generate_password from "../util/password.js";
 import argon2 from "argon2";
 
 export type NewUserOptions = { first_name: string; last_name: string; email: string };
@@ -51,7 +52,7 @@ export class User {
     }
 
     static async new(options: NewUserOptions, send_mail: boolean = true): Promise<User> {
-        const new_password = User.generate_password();
+        const new_password = generate_password();
 
         const user = new User(
             true,
@@ -163,16 +164,6 @@ export class User {
         }
     }
 
-    private static generate_password(length: number = 12): string {
-        const charset = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
-        const bytes = randomBytes(length);
-        let password = "";
-        for (let i = 0; i < length; i++) {
-            password += charset[bytes.at(i)! % charset.length];
-        }
-        return password;
-    }
-
     /**
      * Returns true if the password matches and false if it does not
      * @param input The input password
@@ -186,7 +177,7 @@ export class User {
      * @returns The password
      */
     async reset_password(send_mail: boolean = true): Promise<string> {
-        const new_password = User.generate_password();
+        const new_password = generate_password();
         this.password_hash = await argon2.hash(new_password);
 
         if (send_mail) {
@@ -220,7 +211,7 @@ export class Student extends User {
         if (user.role != "student") { return null; }
 
         const res = await pool.query(
-            `SELECT "skill_level", "dietary_preferences", "favorite_cuisines", "allergens" FROM "Students" WHERE "student_id" = $1`,
+            `SELECT "skill_level", "dietary_preferences", "favorite_cuisines", "allergens" FROM "students" WHERE "student_id" = $1`,
             [user.user_id]
         );
 
@@ -251,7 +242,7 @@ export class Student extends User {
 
         const save_insert = async () => {
             await pool.query(
-                `INSERT INTO "Students" ("student_id", "skill_level", "dietary_preferences", "favorite_cuisines", "allergens")
+                `INSERT INTO "students" ("student_id", "skill_level", "dietary_preferences", "favorite_cuisines", "allergens")
                     VALUES ($1, $2, $3, $4, $5)`,
                 [
                     this.user_id,
@@ -265,7 +256,7 @@ export class Student extends User {
 
         const save_update = async () => {
             await pool.query(
-                `UPDATE "Students" SET "skill_level" = $2, "dietary_preferences" = $3, "favorite_cuisines" = $4, "allergens" = $5
+                `UPDATE "students" SET "skill_level" = $2, "dietary_preferences" = $3, "favorite_cuisines" = $4, "allergens" = $5
                     WHERE "student_id" = $1`,
                 [
                     this.user_id,
@@ -281,7 +272,7 @@ export class Student extends User {
             await save_insert();
         } else {
             const student_exists = await pool.query(
-                `SELECT 1 FROM "Students" WHERE "student_id" = $1`,
+                `SELECT 1 FROM "students" WHERE "student_id" = $1`,
                 [this.user_id]
             );
             if (student_exists.rows.length > 0) {
@@ -339,7 +330,7 @@ export class Instructor extends User {
         if (user.role != "instructor") { return null; }
 
         const result = await pool.query(
-            `SELECT "biography", "specialization", "rating", "verified" FROM "Instructors" WHERE "instructor_id" = $1`,
+            `SELECT "biography", "specialization", "rating", "verified" FROM "instructors" WHERE "instructor_id" = $1`,
             [user.user_id]
         );
 
@@ -370,7 +361,7 @@ export class Instructor extends User {
 
         const save_insert = async () => {
             await pool.query(
-                `INSERT INTO "Instructors" ("instructor_id", "biography", "specialization", "rating", "verified")
+                `INSERT INTO "instructors" ("instructor_id", "biography", "specialization", "rating", "verified")
                     VALUES ($1, $2, $3, $4, $5)`,
                 [
                     this.user_id,
@@ -384,7 +375,7 @@ export class Instructor extends User {
 
         const save_update = async () => {
             await pool.query(
-                `UPDATE "Instructors" SET "biography" = $2, "specialization" = $3, "rating" = $4, "verified" = $5
+                `UPDATE "instructors" SET "biography" = $2, "specialization" = $3, "rating" = $4, "verified" = $5
                     WHERE "instructor_id" = $1`,
                 [
                     this.user_id,
@@ -400,7 +391,7 @@ export class Instructor extends User {
             await save_insert();
         } else {
             const instructor_exists = await pool.query(
-                `SELECT 1 FROM "Instructors" WHERE "instructor_id" = $1`,
+                `SELECT 1 FROM "instructors" WHERE "instructor_id" = $1`,
                 [this.user_id]
             );
             if (instructor_exists.rows.length > 0) {
@@ -455,7 +446,7 @@ export class Admin extends User {
         if (user.role != "admin") { return null; }
 
         const result = await pool.query(
-            `SELECT "access_level" FROM "Admins" WHERE "admin_id" = $1`,
+            `SELECT "access_level" FROM "admins" WHERE "admin_id" = $1`,
             [user.user_id]
         );
 
@@ -483,7 +474,7 @@ export class Admin extends User {
 
         const save_insert = async () => {
             await pool.query(
-                `INSERT INTO "Admins" ("admin_id", "access_level")
+                `INSERT INTO "admins" ("admin_id", "access_level")
                     VALUES ($1, $2)`,
                 [
                     this.user_id,
@@ -494,7 +485,7 @@ export class Admin extends User {
 
         const save_update = async () => {
             await pool.query(
-                `UPDATE "Admins" SET "access_level" = $2
+                `UPDATE "admins" SET "access_level" = $2
                     WHERE "admin_id" = $1`,
                 [
                     this.user_id,
@@ -507,7 +498,7 @@ export class Admin extends User {
             await save_insert();
         } else {
             const admin_exists = await pool.query(
-                `SELECT 1 FROM "Admins" WHERE "admin_id" = $1`,
+                `SELECT 1 FROM "admins" WHERE "admin_id" = $1`,
                 [this.user_id]
             );
             if (admin_exists.rows.length > 0) {
