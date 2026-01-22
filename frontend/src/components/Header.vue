@@ -8,7 +8,7 @@
         <li class="dropdown" ref="dropdownRef">
         <a href="#" @click="toggleDropdown">Usluge</a>
             <div :class="['dropdown-menu', { show: showDropdown }]">
-                <a href="#">Tečajevi</a>
+                <router-link to="/courses">Tečajevi</router-link>
                 <a href="#">Lekcije</a>
                 <a href="#">Moduli</a>
                 <a href="#">Recepti</a>
@@ -87,6 +87,7 @@ onBeforeUnmount(() => {
   font-family: 'Gruppo', sans-serif !important;
   font-weight: 600 !important;
 }
+
 
 .header {
   background-color: #e6dfc9;
