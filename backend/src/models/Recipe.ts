@@ -1,6 +1,6 @@
 import { randomUUID, type UUID } from "crypto";
 import { z } from "zod";
-import { pool } from "../db/initDatabase.js";
+import { pool } from "../db/db.js";
 
 export const NewRecipeOptionsSchema = z.object({
     name: z.string(),

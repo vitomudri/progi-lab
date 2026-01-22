@@ -1,11 +1,12 @@
 import { env } from "./env.js";
-import { init_database } from "./db/initDatabase.js";
+import { init_database } from "./db/db.js";
 import { init_email } from "./email/email.js";
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
 import api_router from "./api.js";
+import { init_context } from "./middleware/context.js";
 
 await init_database();
 await init_email();
@@ -14,6 +15,7 @@ const app: Express = express();
 
 app.set("trust proxy", true);
 
+app.use(init_context);
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true}));
 app.use(express.json());
 app.use(express.urlencoded());

@@ -1,6 +1,7 @@
 import pg from "pg";
 import { env } from "../env.js";
-import pkg from '../../package.json' with { type: 'json' };
+import pkg from "../../package.json" with { type: "json" };
+import { User } from "../models/User.js";
 
 export const pool = new pg.Pool({
     user: env.PG_USER,
@@ -41,8 +42,8 @@ export async function init_database() {
                     registration_date DATE DEFAULT CURRENT_DATE,
                     status VARCHAR,
                     role VARCHAR,
-                    audit_log_enabled BOOLEAN DEFAULT false,
                     must_change_password BOOLEAN DEFAULT true,
+                    totp_secret VARCHAR,
                     CONSTRAINT email_key UNIQUE(email),
                     CONSTRAINT status_check CHECK (status IN ('active', 'blocked', 'unverified')),
                     CONSTRAINT role_check CHECK (role IN ('student', 'instructor', 'admin'))
@@ -56,6 +57,7 @@ export async function init_database() {
                     specialization VARCHAR,
                     rating NUMERIC(3,2),
                     verified BOOLEAN DEFAULT false,
+                    verification_file_ids JSONB DEFAULT '[]'::jsonb,
                     CONSTRAINT instructor_id_fkey FOREIGN KEY(instructor_id)
                         REFERENCES Users(user_id)
                         ON UPDATE NO ACTION
@@ -119,7 +121,6 @@ export async function init_database() {
                         ON DELETE CASCADE
                 );
             `);
-
 
             await client.query(`
                 CREATE TABLE Lessons (
@@ -277,7 +278,23 @@ export async function init_database() {
                 );
             `);
 
+            await client.query(`
+                CREATE TABLE StoredFiles (
+                    file_id UUID PRIMARY KEY,
+                    bucket TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    original_name TEXT NOT NULL,
+                    mime_type TEXT NOT NULL,
+                    size BIGINT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
             await client.query("COMMIT");
+
+            let user = await User.new({"email": env.ADMIN_EMAIL, "first_name": "System", "last_name": "Admin"});
+            user.role = "admin";
+            await user.save();
         } catch (err) {
             await client.query("ROLLBACK");
             throw err;
@@ -288,4 +305,4 @@ export async function init_database() {
 
     client.release();
     console.log("Database init finished.");
-};
+}

@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import TwoFASettings from '@/pages/TwoFASettings.vue'
 import Instructors from "@/pages/Instructors.vue";
 import About from '@/pages/About.vue'
 import AdminPage from '@/pages/AdminPage.vue'
@@ -8,9 +7,10 @@ import ParticipantProfile from '@/pages/ParticipantProfile.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import SignUpPage from '@/pages/SignUpPage.vue'
 import TwoFAPage from '@/pages/TwoFAPage.vue'
+import TwoFASettings from '@/pages/TwoFASettings.vue'
 import InstructorProfile from '@/pages/InstructorProfile.vue'
 import ChangePassword from '@/pages/ChangePassword.vue'
-import AddRecipe from '@/pages/AddRecipe.vue' 
+import AddRecipe from '@/pages/AddRecipe.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -44,11 +44,11 @@ const routes: RouteRecordRaw[] = [
     name: 'TwoFASettings',
     component: TwoFASettings
   },
-{
-  path: "/instructors",
-  name: "Instructors",
-  component: Instructors
-},
+  {
+    path: "/instructors",
+    name: "Instructors",
+    component: Instructors
+  },
   {
     path: '/instructor/:id',
     name: 'InstructorProfile',
@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/RecipePage.vue')
   },
   {
-    path: '/add-recipe', 
+    path: '/add-recipe',
     name: 'AddRecipe',
     component: AddRecipe
   },
