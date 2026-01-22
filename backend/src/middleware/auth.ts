@@ -102,7 +102,7 @@ export function require_user_roles(...roles: UserRole[]) {
         if (!roles.includes(req.context.user.role)) {
             return res.status(403).json({ error: "Forbidden" });
         }
-        
+
         next();
     }
 }
