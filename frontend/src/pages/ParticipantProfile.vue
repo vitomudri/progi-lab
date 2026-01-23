@@ -19,6 +19,7 @@
         <p><strong>Dijetetske preferencije:</strong> {{ profileData.dietary_preferences }}</p>
 
         <div class="profile-actions">
+          <button @click="copyCalendarUrl">{{ copyCalendarUrlStatus }}</button>
           <button @click="redirect2FA">2FA Postavke</button>
           <button @click="handleLogout">Odjava</button>
         </div>
@@ -159,12 +160,16 @@ const profileData = ref({
   skill_level: "",
   allergens: "",
   favorite_cuisines: "",
-  dietary_preferences: ""
+  dietary_preferences: "",
+  user_id: "",
+  calendar_key: ""
 });
 
 const loading = ref(true);
 const error = ref<string | null>(null);
 const router = useRouter();
+const copyCalendarUrlStatus = ref("Kopiraj kalendar");
+const copyCalendarTimeout = ref<number | null>(null);
 
 /** ===== Instructor status + request state ===== */
 const instructorStatus = ref({
@@ -447,6 +452,42 @@ async function redirect2FA() {
   router.push("/2fa-settings");
 }
 
+async function copyCalendarUrl() {
+  if (!profileData.value.user_id || !profileData.value.calendar_key) {
+    console.error("Missing user_id or calendar_key");
+    return;
+  }
+
+  const baseUrl = window.location.origin;
+  const calendarUrl = `${baseUrl}/api/v1/calendar/${profileData.value.user_id}?calendar_key=${profileData.value.calendar_key}`;
+
+  try {
+    await navigator.clipboard.writeText(calendarUrl);
+    copyCalendarUrlStatus.value = "✓ Kopirano!";
+
+    // Clear any existing timeout
+    if (copyCalendarTimeout.value) {
+      clearTimeout(copyCalendarTimeout.value);
+    }
+
+    // Reset button text after 2 seconds
+    copyCalendarTimeout.value = setTimeout(() => {
+      copyCalendarUrlStatus.value = "Kopiraj kalendar";
+    }, 2000);
+  } catch (err) {
+    console.error("Failed to copy calendar URL", err);
+    copyCalendarUrlStatus.value = "Greška!";
+
+    if (copyCalendarTimeout.value) {
+      clearTimeout(copyCalendarTimeout.value);
+    }
+
+    copyCalendarTimeout.value = setTimeout(() => {
+      copyCalendarUrlStatus.value = "Kopiraj kalendar";
+    }, 2000);
+  }
+}
+
 onMounted(async () => {
   loading.value = true;
 
@@ -465,7 +506,9 @@ onMounted(async () => {
       skill_level: data.skill_level || "",
       allergens: data.allergens || "",
       favorite_cuisines: data.favorite_cuisines || "",
-      dietary_preferences: data.dietary_preferences || ""
+      dietary_preferences: data.dietary_preferences || "",
+      user_id: data.user_id || "",
+      calendar_key: data.calendar_key || ""
     };
 
     await loadInstructorStatus();
