@@ -17,6 +17,7 @@ profile_router.get("/me", require_auth, async (req, res) => {
         registration_date: user.registration_date,
         status: user.status,
         role: user.role,
+        calendar_key: user.calendar_key
     };
 
     if (user.role === "student") {

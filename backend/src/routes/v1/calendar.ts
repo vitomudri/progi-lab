@@ -3,15 +3,13 @@ import { Router } from "express";
 import { pool } from "../../db/db.js";
 import { generateCalendar } from "../../util/ics.js";
 import { User } from "../../models/User.js"
-import { z } from "zod";
 
-
-const router = Router();
+const calendar_router = Router();
 
 /**
  * GET /calendar/:user_id?calendar_key=...
  */
-router.get("/calendar/:user_id", async (req, res) => {
+calendar_router.get("/:user_id", async (req, res) => {
     const user_id = req.params.user_id;
     const calendar_key = req.query.calendar_key;
 
@@ -85,4 +83,4 @@ router.get("/calendar/:user_id", async (req, res) => {
     }
 });
 
-export default router;
+export default calendar_router;
