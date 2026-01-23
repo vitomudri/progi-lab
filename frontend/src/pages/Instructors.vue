@@ -24,8 +24,8 @@
         </div>
 
         <h3 class="name">{{ instructor.name }}</h3>
-        <p class="rating" v-if="instructor.review_count > 0">
-           Prosj. ocjena: {{ instructor.rating.toFixed(1) }} ({{ instructor.review_count }})
+        <p class="rating" v-if="instructor.ratingCount ?? 0 > 0">
+           Prosj. ocjena: {{ (instructor.rating ?? 0).toFixed(1) }} ({{ instructor.ratingCount }})
         </p>
         <p class="rating" v-else>
             Još nema ocjena
