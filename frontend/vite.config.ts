@@ -15,6 +15,10 @@ export default defineConfig({
     server: {
         proxy: {
             "/api": "http://localhost:3000"
-        }
-    }
+        },
+        // Ensure service worker and other public files are served correctly
+        middlewareMode: false
+    },
+    publicDir: 'public'
 });
+

@@ -1,6 +1,7 @@
-import { randomBytes, randomUUID, type UUID } from "crypto";
+import { randomUUID, type UUID } from "crypto";
 import { pool } from "../db/db.js";
 import { EmailBuilder } from "../email/email.js";
+import generate_password from "../util/password.js";
 import argon2 from "argon2";
 
 export type NewUserOptions = { first_name: string; last_name: string; email: string };
@@ -23,6 +24,7 @@ export class User {
     role: UserRole;
     must_change_password: boolean;
     totp_secret: string | null;
+    calendar_key : UUID;
 
     protected constructor(
         is_new: boolean,
@@ -35,7 +37,8 @@ export class User {
         status: UserStatus,
         role: UserRole,
         must_change_password: boolean,
-        totp_secret: string | null
+        totp_secret: string | null,
+        calendar_key : UUID
     ) {
         this.is_new = is_new;
         this.user_id = user_id;
@@ -48,10 +51,11 @@ export class User {
         this.role = role;
         this.must_change_password = must_change_password;
         this.totp_secret = totp_secret;
+        this.calendar_key = calendar_key;
     }
 
     static async new(options: NewUserOptions, send_mail: boolean = true): Promise<User> {
-        const new_password = User.generate_password();
+        const new_password = generate_password();
 
         const user = new User(
             true,
@@ -64,7 +68,8 @@ export class User {
             null,
             "student",
             true,
-            null
+            null,
+            randomUUID()
         );
 
         if (send_mail) {
@@ -94,7 +99,8 @@ export class User {
                     row.status,
                     row.role,
                     row.must_change_password,
-                    row.totp_secret || null
+                    row.totp_secret || null,
+                    row.calendar_key
                 );
             } catch (ignored) {}
 
@@ -127,8 +133,8 @@ export class User {
     async save() {
         if (this.is_new) {
             await pool.query(
-                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "must_change_password", "totp_secret")
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "must_change_password", "totp_secret", "calendar_key")
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
                 [
                     this.user_id,
                     this.first_name,
@@ -139,13 +145,14 @@ export class User {
                     this.status,
                     this.role,
                     this.must_change_password,
-                    this.totp_secret
+                    this.totp_secret,
+                    this.calendar_key
                 ]
             );
             this.is_new = false;
         } else {
             await pool.query(
-                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "must_change_password" = $9, "totp_secret" = $10
+                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "must_change_password" = $9, "totp_secret" = $10, "calendar_key" = $11
                  WHERE "user_id" = $1`,
                 [
                     this.user_id,
@@ -157,20 +164,11 @@ export class User {
                     this.status,
                     this.role,
                     this.must_change_password,
-                    this.totp_secret
+                    this.totp_secret,
+                    this.calendar_key
                 ]
             );
         }
-    }
-
-    private static generate_password(length: number = 12): string {
-        const charset = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
-        const bytes = randomBytes(length);
-        let password = "";
-        for (let i = 0; i < length; i++) {
-            password += charset[bytes.at(i)! % charset.length];
-        }
-        return password;
     }
 
     /**
@@ -186,7 +184,7 @@ export class User {
      * @returns The password
      */
     async reset_password(send_mail: boolean = true): Promise<string> {
-        const new_password = User.generate_password();
+        const new_password = generate_password();
         this.password_hash = await argon2.hash(new_password);
 
         if (send_mail) {
@@ -220,7 +218,7 @@ export class Student extends User {
         if (user.role != "student") { return null; }
 
         const res = await pool.query(
-            `SELECT "skill_level", "dietary_preferences", "favorite_cuisines", "allergens" FROM "Students" WHERE "student_id" = $1`,
+            `SELECT "skill_level", "dietary_preferences", "favorite_cuisines", "allergens" FROM "students" WHERE "student_id" = $1`,
             [user.user_id]
         );
 
@@ -238,6 +236,7 @@ export class Student extends User {
             user.role,
             user.must_change_password,
             user.totp_secret,
+            user.calendar_key,
             data.skill_level || null,
             data.dietary_preferences || null,
             data.favorite_cuisines || null,
@@ -251,7 +250,7 @@ export class Student extends User {
 
         const save_insert = async () => {
             await pool.query(
-                `INSERT INTO "Students" ("student_id", "skill_level", "dietary_preferences", "favorite_cuisines", "allergens")
+                `INSERT INTO "students" ("student_id", "skill_level", "dietary_preferences", "favorite_cuisines", "allergens")
                     VALUES ($1, $2, $3, $4, $5)`,
                 [
                     this.user_id,
@@ -265,7 +264,7 @@ export class Student extends User {
 
         const save_update = async () => {
             await pool.query(
-                `UPDATE "Students" SET "skill_level" = $2, "dietary_preferences" = $3, "favorite_cuisines" = $4, "allergens" = $5
+                `UPDATE "students" SET "skill_level" = $2, "dietary_preferences" = $3, "favorite_cuisines" = $4, "allergens" = $5
                     WHERE "student_id" = $1`,
                 [
                     this.user_id,
@@ -281,7 +280,7 @@ export class Student extends User {
             await save_insert();
         } else {
             const student_exists = await pool.query(
-                `SELECT 1 FROM "Students" WHERE "student_id" = $1`,
+                `SELECT 1 FROM "students" WHERE "student_id" = $1`,
                 [this.user_id]
             );
             if (student_exists.rows.length > 0) {
@@ -304,6 +303,7 @@ export class Student extends User {
         role: UserRole,
         must_change_password: boolean,
         totp_secret: string | null,
+        calendar_key: UUID,
         skill_level: string | null,
         dietary_preferences: string | null,
         favorite_cuisines: string | null,
@@ -320,7 +320,8 @@ export class Student extends User {
             status,
             role,
             must_change_password,
-            totp_secret
+            totp_secret,
+            calendar_key
         );
         this.skill_level = skill_level;
         this.dietary_preferences = dietary_preferences;
@@ -339,7 +340,7 @@ export class Instructor extends User {
         if (user.role != "instructor") { return null; }
 
         const result = await pool.query(
-            `SELECT "biography", "specialization", "rating", "verified" FROM "Instructors" WHERE "instructor_id" = $1`,
+            `SELECT "biography", "specialization", "rating", "verified" FROM "instructors" WHERE "instructor_id" = $1`,
             [user.user_id]
         );
 
@@ -357,6 +358,7 @@ export class Instructor extends User {
             user.role,
             user.must_change_password,
             user.totp_secret,
+            user.calendar_key,
             instructor_data.biography || null,
             instructor_data.specialization || null,
             instructor_data.rating || null,
@@ -370,7 +372,7 @@ export class Instructor extends User {
 
         const save_insert = async () => {
             await pool.query(
-                `INSERT INTO "Instructors" ("instructor_id", "biography", "specialization", "rating", "verified")
+                `INSERT INTO "instructors" ("instructor_id", "biography", "specialization", "rating", "verified")
                     VALUES ($1, $2, $3, $4, $5)`,
                 [
                     this.user_id,
@@ -384,7 +386,7 @@ export class Instructor extends User {
 
         const save_update = async () => {
             await pool.query(
-                `UPDATE "Instructors" SET "biography" = $2, "specialization" = $3, "rating" = $4, "verified" = $5
+                `UPDATE "instructors" SET "biography" = $2, "specialization" = $3, "rating" = $4, "verified" = $5
                     WHERE "instructor_id" = $1`,
                 [
                     this.user_id,
@@ -400,7 +402,7 @@ export class Instructor extends User {
             await save_insert();
         } else {
             const instructor_exists = await pool.query(
-                `SELECT 1 FROM "Instructors" WHERE "instructor_id" = $1`,
+                `SELECT 1 FROM "instructors" WHERE "instructor_id" = $1`,
                 [this.user_id]
             );
             if (instructor_exists.rows.length > 0) {
@@ -423,6 +425,7 @@ export class Instructor extends User {
         role: UserRole,
         must_change_password: boolean,
         totp_secret: string | null,
+        calendar_key: UUID,
         biography: string | null,
         specialization: string | null,
         rating: number | null,
@@ -439,7 +442,8 @@ export class Instructor extends User {
             status,
             role,
             must_change_password,
-            totp_secret
+            totp_secret,
+            calendar_key
         );
         this.biography = biography;
         this.specialization = specialization;
@@ -455,7 +459,7 @@ export class Admin extends User {
         if (user.role != "admin") { return null; }
 
         const result = await pool.query(
-            `SELECT "access_level" FROM "Admins" WHERE "admin_id" = $1`,
+            `SELECT "access_level" FROM "admins" WHERE "admin_id" = $1`,
             [user.user_id]
         );
 
@@ -473,6 +477,7 @@ export class Admin extends User {
             user.role,
             user.must_change_password,
             user.totp_secret,
+            user.calendar_key,
             admin_data.access_level || null
         );
     }
@@ -483,7 +488,7 @@ export class Admin extends User {
 
         const save_insert = async () => {
             await pool.query(
-                `INSERT INTO "Admins" ("admin_id", "access_level")
+                `INSERT INTO "admins" ("admin_id", "access_level")
                     VALUES ($1, $2)`,
                 [
                     this.user_id,
@@ -494,7 +499,7 @@ export class Admin extends User {
 
         const save_update = async () => {
             await pool.query(
-                `UPDATE "Admins" SET "access_level" = $2
+                `UPDATE "admins" SET "access_level" = $2
                     WHERE "admin_id" = $1`,
                 [
                     this.user_id,
@@ -507,7 +512,7 @@ export class Admin extends User {
             await save_insert();
         } else {
             const admin_exists = await pool.query(
-                `SELECT 1 FROM "Admins" WHERE "admin_id" = $1`,
+                `SELECT 1 FROM "admins" WHERE "admin_id" = $1`,
                 [this.user_id]
             );
             if (admin_exists.rows.length > 0) {
@@ -530,6 +535,7 @@ export class Admin extends User {
         role: UserRole,
         must_change_password: boolean,
         totp_secret: string | null,
+        calendar_key: UUID,
         access_level: string | null
     ) {
         super(
@@ -543,7 +549,8 @@ export class Admin extends User {
             status,
             role,
             must_change_password,
-            totp_secret
+            totp_secret,
+            calendar_key
         );
         this.access_level = access_level;
     }

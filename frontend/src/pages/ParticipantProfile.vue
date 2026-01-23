@@ -1,6 +1,6 @@
 <template>
   <div class="profile-page-wrapper">
-    <UserCard :ime="profileData.ime" :prezime="profileData.prezime" :email="profileData.email" />
+    <UserCard :ime="profileData.first_name" :prezime="profileData.last_name" :email="profileData.email" />
 
     <section class="profile-details">
       <template v-if="loading">
@@ -13,13 +13,13 @@
       </template>
 
       <template v-else>
-        <p><strong>Razine vještine:</strong> {{ profileData.skillLevel }}</p>
-        <p><strong>Alergeni:</strong> {{ profileData.allergens.join(", ") }}</p>
-        <p><strong>Omiljene kuhinje:</strong> {{ profileData.favoriteCuisines.join(", ") }}</p>
-        <p><strong>Povijest tečajeva:</strong> {{ profileData.courseHistory.join(", ") }}</p>
-        <p><strong>Bilješke:</strong> {{ profileData.notes }}</p>
+        <p><strong>Razine vještine:</strong> {{ profileData.skill_level }}</p>
+        <p><strong>Alergeni:</strong> {{ profileData.allergens }}</p>
+        <p><strong>Omiljene kuhinje:</strong> {{ profileData.favorite_cuisines }}</p>
+        <p><strong>Dijetetske preferencije:</strong> {{ profileData.dietary_preferences }}</p>
 
         <div class="profile-actions">
+          <button @click="copyCalendarUrl">{{ copyCalendarUrlStatus }}</button>
           <button @click="redirect2FA">2FA Postavke</button>
           <button @click="handleLogout">Odjava</button>
         </div>
@@ -154,19 +154,22 @@ import { useRouter } from "vue-router";
 type Role = "student" | "instructor" | "admin";
 
 const profileData = ref({
-  ime: "",
-  prezime: "",
+  first_name: "",
+  last_name: "",
   email: "",
-  skillLevel: "",
-  allergens: [] as string[],
-  favoriteCuisines: [] as string[],
-  courseHistory: [] as string[],
-  notes: ""
+  skill_level: "",
+  allergens: "",
+  favorite_cuisines: "",
+  dietary_preferences: "",
+  user_id: "",
+  calendar_key: ""
 });
 
 const loading = ref(true);
 const error = ref<string | null>(null);
 const router = useRouter();
+const copyCalendarUrlStatus = ref("Kopiraj kalendar");
+const copyCalendarTimeout = ref<number | null>(null);
 
 /** ===== Instructor status + request state ===== */
 const instructorStatus = ref({
@@ -449,6 +452,42 @@ async function redirect2FA() {
   router.push("/2fa-settings");
 }
 
+async function copyCalendarUrl() {
+  if (!profileData.value.user_id || !profileData.value.calendar_key) {
+    console.error("Missing user_id or calendar_key");
+    return;
+  }
+
+  const baseUrl = window.location.origin;
+  const calendarUrl = `${baseUrl}/api/v1/calendar/${profileData.value.user_id}?calendar_key=${profileData.value.calendar_key}`;
+
+  try {
+    await navigator.clipboard.writeText(calendarUrl);
+    copyCalendarUrlStatus.value = "✓ Kopirano!";
+
+    // Clear any existing timeout
+    if (copyCalendarTimeout.value) {
+      clearTimeout(copyCalendarTimeout.value);
+    }
+
+    // Reset button text after 2 seconds
+    copyCalendarTimeout.value = setTimeout(() => {
+      copyCalendarUrlStatus.value = "Kopiraj kalendar";
+    }, 2000);
+  } catch (err) {
+    console.error("Failed to copy calendar URL", err);
+    copyCalendarUrlStatus.value = "Greška!";
+
+    if (copyCalendarTimeout.value) {
+      clearTimeout(copyCalendarTimeout.value);
+    }
+
+    copyCalendarTimeout.value = setTimeout(() => {
+      copyCalendarUrlStatus.value = "Kopiraj kalendar";
+    }, 2000);
+  }
+}
+
 onMounted(async () => {
   loading.value = true;
 
@@ -461,14 +500,15 @@ onMounted(async () => {
 
     const data = await res.json();
     profileData.value = {
-      ime: data.ime || "",
-      prezime: data.prezime || "",
+      first_name: data.first_name || "",
+      last_name: data.last_name || "",
       email: data.email || "",
-      skillLevel: data.skillLevel || "",
-      allergens: data.allergens || [],
-      favoriteCuisines: data.favoriteCuisines || [],
-      courseHistory: data.courseHistory || [],
-      notes: data.notes || ""
+      skill_level: data.skill_level || "",
+      allergens: data.allergens || "",
+      favorite_cuisines: data.favorite_cuisines || "",
+      dietary_preferences: data.dietary_preferences || "",
+      user_id: data.user_id || "",
+      calendar_key: data.calendar_key || ""
     };
 
     await loadInstructorStatus();

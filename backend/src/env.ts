@@ -36,10 +36,14 @@ const schema = z.object({
     S3_BUCKET_NAME: z.string(),
     S3_REGION: z.string(),
     ADMIN_EMAIL: z.string(),
+    JITSI_APP_ID: z.string(),
+    JITSI_PRIVATE_KEY_PATH: z.string(),
+    JITSI_PUBLIC_KEY_PATH: z.string(),
+    JITSI_DOMAIN: z.string(),
 });
 
 if (!PRODUCTION) {
-    dotenv.config();
+    dotenv.config({ quiet: true });
 }
 
 const parsed = schema.safeParse(process.env);
@@ -50,5 +54,7 @@ if (!parsed.success) {
 
 export const env = {
     PRODUCTION,
+    VAPID_PUBLIC_KEY: "",
+    VAPID_PRIVATE_KEY: "",
     ...parsed.data
 };

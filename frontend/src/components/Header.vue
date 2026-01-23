@@ -7,13 +7,11 @@
         <li><router-link to="/">Početna</router-link></li>
 
         <li class="dropdown" ref="dropdownRef">
-          <a href="#" @click.prevent="toggleDropdown">Usluge</a>
-          <div :class="['dropdown-menu', { show: showDropdown }]">
-            <router-link to="/courses">Tečajevi</router-link>
-            <a href="#">Lekcije</a>
-            <a href="#">Moduli</a>
-            <a href="#">Recepti</a>
-          </div>
+        <a href="#" @click="toggleDropdown">Usluge</a>
+            <div :class="['dropdown-menu', { show: showDropdown }]">
+                <router-link to="/courses">Tečajevi</router-link>
+                <router-link to="/live">Radionice</router-link>
+            </div>
         </li>
 
         <li><router-link to="/instructors">Instruktori</router-link></li>
@@ -150,6 +148,7 @@ onBeforeUnmount(() => {
   font-family: 'Gruppo', sans-serif !important;
   font-weight: 600 !important;
 }
+
 
 .header {
   background-color: #e6dfc9;
