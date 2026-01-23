@@ -7,15 +7,6 @@
         <li><router-link to="/">Početna</router-link></li>
 
         <li class="dropdown" ref="dropdownRef">
-<<<<<<< Updated upstream
-        <a href="#" @click="toggleDropdown">Usluge</a>
-            <div :class="['dropdown-menu', { show: showDropdown }]">
-                <a href="#">Tečajevi</a>
-                <a href="#">Lekcije</a>
-                <a href="#">Moduli</a>
-                <a href="#">Recepti</a>
-            </div>
-=======
           <a href="#" @click.prevent="toggleDropdown">Usluge</a>
           <div :class="['dropdown-menu', { show: showDropdown }]">
             <router-link to="/courses">Tečajevi</router-link>
@@ -23,7 +14,6 @@
             <a href="#">Moduli</a>
             <a href="#">Recepti</a>
           </div>
->>>>>>> Stashed changes
         </li>
 
         <li><router-link to="/instructors">Instruktori</router-link></li>
