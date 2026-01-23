@@ -120,7 +120,7 @@ router.get("/", async (req, res) => {
 
        LEFT JOIN "reviews" rv
          ON rv.object_type = 'instructor'
-        AND rv.object_id = u.user_id
+        AND rv.object_id = u.user_id::text
         AND rv.status = 'approved'
 
        WHERE i.verified = true
