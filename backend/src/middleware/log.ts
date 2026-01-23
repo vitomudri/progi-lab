@@ -42,13 +42,23 @@ const log_map: Map<string, string> = new Map([
     [make_key(false, "/recipe/get/:recipe_id"), "Recipe fetch failed"],
     [make_key(true, "/recipe/create"), "Recipe created"],
     [make_key(false, "/recipe/create"), "Recipe creation failed"],
+
+    [make_key(true, "/admin/audit_log"), "Audit log fetched"],
+    [make_key(false, "/admin/audit_log"), "Audit log fetch failed"],
+    [make_key(true, "/admin/instructors/pending"), "Pending instructors fetched"],
+    [make_key(false, "/admin/instructors/pending"), "Pending instructors fetch failed"],
+    [make_key(true, "/admin/instructors/:id/approve"), "Pending instructor approved"],
+    [make_key(false, "/admin/instructors/:id/approve"), "Pending instructor approval failed"],
+    [make_key(true, "/admin/instructors/:id/reject"), "Pending instructor rejected"],
+    [make_key(false, "/admin/instructors/:id/reject"), "Pending instructor rejection failed"],
+    [make_key(true, "/admin/files/:file_id/url"), "Signed file url generated"],
+    [make_key(false, "/admin/files/:file_id/url"), "Signed file url generation failed"],
 ]);
 
 export default async function log(req: Request, res: Response, next: NextFunction) {
-    if (req.user !== undefined && req.user.audit_log_enabled) {
-        const user = req.user!;
+    if (req.context.user !== undefined) {
+        const user = req.context.user!;
         const route_path = req.route?.path || req.path;
-        console.log(route_path);
         res.on("finish", async () => {
             let success = res.statusCode < 400;
             let log: string;

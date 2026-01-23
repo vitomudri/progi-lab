@@ -317,14 +317,14 @@ auth_router.get("/github/callback", async (req, res) => {
 });
 
 auth_router.post("/2fa/request-setup", require_nototp_auth, async (req, res) => {
-    const user = req.user!;
+    const user = req.context.user!;
     const { secret, qr_code } = await generate_TOTP_secret(user.email);
 
     return res.json({ secret, qr_code });
 });
 
 auth_router.post("/2fa/verify-setup", require_nototp_auth, async (req, res) => {
-    const user = req.user!;
+    const user = req.context.user!;
     const { secret, token } = req.body;
 
     if (!secret || !token) {
@@ -343,7 +343,7 @@ auth_router.post("/2fa/verify-setup", require_nototp_auth, async (req, res) => {
 });
 
 auth_router.post("/2fa/disable", require_nototp_auth, async (req, res) => {
-    const user = req.user!;
+    const user = req.context.user!;
     const { token } = req.body;
 
     if (!token) {
@@ -366,12 +366,12 @@ auth_router.post("/2fa/disable", require_nototp_auth, async (req, res) => {
 });
 
 auth_router.get("/2fa/status", require_nototp_auth, (req, res) => {
-    const user = req.user!;
+    const user = req.context.user!;
     return res.json({ totp_enabled: user.totp_secret !== null });
 });
 
 auth_router.post("/2fa/verify-token", require_nototp_auth, async (req, res) => {
-    const user = req.user!;
+    const user = req.context.user!;
     const { token } = req.body;
 
     if (!token) {
