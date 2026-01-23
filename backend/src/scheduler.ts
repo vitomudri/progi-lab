@@ -2,14 +2,14 @@ import type { UUID } from "crypto";
 import { pool } from "./db/db.js";
 import { EmailBuilder } from "./email/email.js";
 import { User } from "./models/User.js";
-import webpush from "web-push";
+import webpush, { WebPushError } from "web-push";
 import { env } from "./env.js";
 
 let processed: Set<{workshop_id: UUID, user_id: UUID, threshold: string}> = new Set();
 
 export default function init_scheduler() {
     webpush.setVapidDetails(
-        env.CORS_ORIGIN,
+        'https://kuhari.app/',
         env.VAPID_PUBLIC_KEY,
         env.VAPID_PRIVATE_KEY
     );
@@ -54,7 +54,50 @@ export default function init_scheduler() {
                             .with_html_body(`<p>This is a reminder that you have an upcoming workshop "<strong>${row.title}</strong>" scheduled for <strong>${new Date(row.date_time).toISOString()}</strong>.</p>`)
                             .build_and_send();
 
-                        // Send browser notification here
+                        try {
+                            const res = await pool.query(
+                                `SELECT subscription_id, endpoint, p256dh, auth FROM PushSubscriptions WHERE user_id = $1`,
+                                [row.user_id]
+                            );
+
+                            const subscriptions = res.rows;
+
+                            for (const subscription of subscriptions) {
+                                const subscription_obj = {
+                                    endpoint: subscription.endpoint,
+                                    keys: {
+                                        p256dh: subscription.p256dh,
+                                        auth: subscription.auth
+                                    }
+                                };
+
+                                try {
+                                    await webpush.sendNotification(
+                                        subscription_obj,
+                                        JSON.stringify({
+                                            title: "Reminder: Upcoming Workshop",
+                                            body: `Your workshop "${row.title}" starts in ${threshold.label}`,
+                                            tag: `workshop-${row.workshop_id}`,
+                                            data: {
+                                                workshop_id: row.workshop_id,
+                                                title: row.title
+                                            }
+                                        })
+                                    );
+                                } catch (error: WebPushError | any) {
+                                    if (error instanceof WebPushError && error.statusCode === 410) {
+                                        await pool.query(
+                                            `DELETE FROM PushSubscriptions WHERE subscription_id = $1`,
+                                            [subscription.subscription_id]
+                                        );
+                                    } else {
+                                        console.error(error);
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.error(error);
+                        }
 
                         processed.add(this_event);
                     }

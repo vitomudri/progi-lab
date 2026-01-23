@@ -12,6 +12,7 @@ import search_router from "./search.js";
 import reviews_router from "./reviews.js";
 import live_router from "./live.js";
 import calendar_router from "./calendar.js";
+import notifications_router from "./notifications.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/search", search_router);
 router.use("/reviews", reviews_router);
 router.use("/live", live_router);
 router.use("/calendar", calendar_router);
+router.use("/notifications", notifications_router);
 
 export default router;

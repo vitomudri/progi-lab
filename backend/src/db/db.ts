@@ -494,6 +494,27 @@ export async function init_database() {
                 );
             `);
 
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS PushSubscriptions (
+                    subscription_id SERIAL PRIMARY KEY,
+                    user_id UUID NOT NULL,
+                    endpoint TEXT NOT NULL,
+                    p256dh TEXT NOT NULL,
+                    auth TEXT NOT NULL,
+                    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                    CONSTRAINT push_subscriptions_user_id_fkey FOREIGN KEY (user_id)
+                        REFERENCES Users(user_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT push_subscriptions_user_endpoint_unique UNIQUE (user_id, endpoint)
+                );
+            `);
+
+            await client.query(`CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON PushSubscriptions(user_id);`);
+
             await client.query("COMMIT");
 
             let user = await User.new({ email: env.ADMIN_EMAIL, first_name: "System", last_name: "Admin" });
