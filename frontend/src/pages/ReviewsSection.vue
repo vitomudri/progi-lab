@@ -67,10 +67,19 @@
         </div>
 
         <div class="actions">
-          <button class="btn small ghost" @click.prevent="toggleHelpful(r)" :disabled="!isLoggedIn">
-            👍 Korisno ({{ r.helpful_count }})
-          </button>
+           <button class="btn small ghost" @click.prevent="toggleHelpful(r)" :disabled="!isLoggedIn">
+           👍 Korisno ({{ r.helpful_count }})
+           </button>
+
+           <button
+             v-if="role === 'admin'"
+            class="btn small danger"
+            @click.prevent="removeReview(r)"
+          >
+            🗑 Ukloni
+           </button>
         </div>
+
       </div>
     </div>
 
@@ -263,6 +272,31 @@ async function toggleHelpful(r: Review) {
     alert(e?.message ?? "Greška.");
   }
 }
+async function removeReview(r: Review) {
+  if (props.role !== "admin") return;
+
+  const ok = confirm("Sigurno želiš ukloniti ovu recenziju?");
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`/api/v1/reviews/${r.review_id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "Removed by admin" })
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(txt || "Neuspješno brisanje recenzije.");
+    }
+
+    await loadReviews(); // refresh liste
+  } catch (e: any) {
+    alert(e?.message ?? "Greška.");
+  }
+}
+
 
 watch(() => [props.objectType, props.objectId], loadReviews);
 onMounted(loadReviews);
@@ -320,7 +354,13 @@ onMounted(loadReviews);
 .photo { margin-top: 10px; }
 .photo img { max-width: 100%; border-radius: 10px; border: 1px solid #eee; }
 
-.actions { margin-top: 12px; }
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;          /* 👈 OVO je razmak između gumbova */
+  align-items: center;
+}
+
 
 .btn {
   border: none;
@@ -335,4 +375,12 @@ onMounted(loadReviews);
 .btn:hover { background-color: #d7ceb8; }
 .small { padding: 0.55rem 0.75rem; font-size: 0.9rem; }
 .ghost { background-color: #fff; border: 1px solid #d9cfb4; }
+.danger {
+  background-color: #f3d0d0;
+  border: 1px solid #e7a8a8;
+}
+.danger:hover {
+  background-color: #efbcbc;
+}
+
 </style>
