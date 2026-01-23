@@ -175,7 +175,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE LiveWorkshops (
-                    workshop_id SERIAL PRIMARY KEY,
+                    workshop_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     title VARCHAR,
                     description TEXT,
                     date_time TIMESTAMP WITHOUT TIME ZONE,
@@ -192,10 +192,10 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Reservations (
-                    reservation_id SERIAL PRIMARY KEY,
+                    reservation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     user_id VARCHAR,
-                    workshop_id INTEGER,
-                    status VARCHAR DEFAULT 'potvrđeno',
+                    workshop_id UUID,
+                    status VARCHAR DEFAULT 'confirmed',
                     CONSTRAINT user_id_fkey FOREIGN KEY(user_id)
                         REFERENCES Users(user_id)
                         ON UPDATE NO ACTION
@@ -204,7 +204,7 @@ export async function init_database() {
                         REFERENCES LiveWorkshops(workshop_id)
                         ON UPDATE NO ACTION
                         ON DELETE CASCADE,
-                    CONSTRAINT status_check CHECK(status IN ('potvrđeno', 'otkazano'))
+                    CONSTRAINT status_check CHECK(status IN ('confirmed', 'canceled'))
                 );
             `);
 
@@ -221,7 +221,7 @@ export async function init_database() {
                         REFERENCES Users(user_id)
                         ON UPDATE NO ACTION
                         ON DELETE CASCADE,
-                    CONSTRAINT object_type_check CHECK (object_type IN ('lekcija', 'tečaj', 'instruktor')),
+                    CONSTRAINT object_type_check CHECK (object_type IN ('lesson', 'course', 'instructor')),
                     CONSTRAINT rating_check CHECK (rating >= 1 AND rating <= 5)
                 );
             `);
@@ -242,22 +242,6 @@ export async function init_database() {
                         REFERENCES Courses(course_id)
                         ON UPDATE NO ACTION
                         ON DELETE CASCADE
-                );
-            `);
-
-            await client.query(`
-            CREATE TABLE Notifications (
-                    notification_id SERIAL PRIMARY KEY,
-                    user_id VARCHAR,
-                    content TEXT,
-                    type VARCHAR,
-                    status VARCHAR DEFAULT 'poslano',
-                    CONSTRAINT user_id_fkey FOREIGN KEY(user_id)
-                        REFERENCES Users(user_id)
-                        ON UPDATE NO ACTION
-                        ON DELETE CASCADE,
-                    CONSTRAINT type_check CHECK(type IN ('podsjetnik', 'novost', 'potvrda')),
-                    CONSTRAINT status_check CHECK(status IN ('poslano', 'procitano'))
                 );
             `);
 

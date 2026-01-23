@@ -7,9 +7,11 @@ import cors from "cors";
 import path from "path";
 import api_router from "./api.js";
 import { init_context } from "./middleware/context.js";
+import init_scheduler from "./scheduler.js";
 
 await init_database();
 await init_email();
+init_scheduler();
 
 const app: Express = express();
 
