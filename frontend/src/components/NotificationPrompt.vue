@@ -1,8 +1,17 @@
 <template>
   <div v-if="showPrompt" class="notification-prompt">
-    <p>Enable browser notifications to get reminders for upcoming workshops</p>
-    <button @click="enableNotifications" class="btn-enable">Enable Notifications</button>
-    <button @click="dismissPrompt" class="btn-dismiss">Dismiss</button>
+    <span class="message">
+      Enable browser notifications to get reminders for upcoming workshops
+    </span>
+
+    <div class="actions">
+      <button @click="enableNotifications" class="btn-enable">
+        Enable notifications
+      </button>
+      <button @click="dismissPrompt" class="btn-dismiss">
+        Dismiss
+      </button>
+    </div>
   </div>
 </template>
 
@@ -13,21 +22,12 @@ import { notificationService } from '../services/notificationService'
 const showPrompt = ref(false)
 
 onMounted(async () => {
-  // Check if user is logged in
   const isLoggedIn = await notificationService.isUserLoggedIn()
-  
-  if (!isLoggedIn) {
-    return
-  }
+  if (!isLoggedIn) return
 
-  if (!notificationService.isSupported()) {
-    return
-  }
+  if (!notificationService.isSupported()) return
 
-  // Show prompt if permission is not already granted
-  const permission = Notification.permission
-  
-  if (permission !== 'granted') {
+  if (Notification.permission !== 'granted') {
     showPrompt.value = true
   }
 })
@@ -35,7 +35,6 @@ onMounted(async () => {
 const enableNotifications = async () => {
   try {
     const permission = await notificationService.requestNotificationPermission()
-    
     if (permission === 'granted') {
       await notificationService.subscribeToPushNotifications()
       showPrompt.value = false
@@ -52,47 +51,58 @@ const dismissPrompt = () => {
 
 <style scoped>
 .notification-prompt {
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 4px;
-  padding: 12px 16px;
-  margin: 16px;
+  width: 90%;
+  margin: 12px auto;
+  padding: 12px 20px;
+
+  background-color: #f5f1e8;
+  border: 1px solid #e2d9c2;
+  border-radius: 14px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
+
+  font-family: 'Gruppo', sans-serif;
+  color: #2d2d2d;
 }
 
-.notification-prompt p {
-  margin: 0;
-  flex: 1;
-}
-
-.btn-enable,
-.btn-dismiss {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.message {
   font-size: 14px;
-  white-space: nowrap;
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
 }
 
 .btn-enable {
-  background-color: #28a745;
-  color: white;
+  background-color: #5f7c4a;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
 }
 
 .btn-enable:hover {
-  background-color: #218838;
+  background-color: #4f683e;
 }
 
 .btn-dismiss {
-  background-color: #6c757d;
-  color: white;
+  background-color: transparent;
+  border: 1px solid #aaa;
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #555;
 }
 
 .btn-dismiss:hover {
-  background-color: #5a6268;
+  background-color: #e6dfc9;
 }
 </style>
