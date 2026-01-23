@@ -102,5 +102,99 @@ router.get("/me", require_auth, async (req, res) => {
         return res.status(500).json({ error: "Failed to fetch instructor status" });
     }
 });
+router.get("/", async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT
+         u.user_id as id,
+         u.first_name,
+         u.last_name,
+         i.biography,
+         i.specialization,
+
+         COALESCE(ROUND(AVG(rv.rating)::numeric, 2), 0) AS avg_rating,
+         COUNT(rv.review_id)::int AS review_count
+
+       FROM instructors i
+       JOIN "users" u ON u.user_id = i.instructor_id
+
+       LEFT JOIN "reviews" rv
+         ON rv.object_type = 'instructor'
+        AND rv.object_id = u.user_id
+        AND rv.status = 'approved'
+
+       WHERE i.verified = true
+       GROUP BY u.user_id, u.first_name, u.last_name, i.biography, i.specialization
+       ORDER BY avg_rating DESC NULLS LAST, review_count DESC, u.last_name ASC, u.first_name ASC`
+    );
+
+    return res.json({
+      instructors: r.rows.map((x) => ({
+        id: x.id,
+        name: `${x.first_name} ${x.last_name}`,
+        rating: Number(x.avg_rating),          // <- prosjek iz Reviews
+        review_count: Number(x.review_count),  // <- broj recenzija
+        biography: x.biography ?? null,
+        specialization: x.specialization ?? null,
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to fetch instructors" });
+  }
+});
+
+/**
+ * GET /v1/instructors/:instructor_id
+ * Public profil instruktora
+ */
+router.get("/:instructor_id", async (req, res) => {
+  const { instructor_id } = req.params;
+
+  try {
+    const r = await pool.query(
+      `
+      SELECT
+        u.user_id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        i.biography,
+        i.specialization,
+        i.rating
+      FROM instructors i
+      JOIN "users" u ON u.user_id = i.instructor_id
+      WHERE u.user_id = $1 AND i.verified = true
+      `,
+      [instructor_id]
+    );
+
+    if (r.rowCount === 0) {
+      return res.status(404).json({ error: "Instructor not found" });
+    }
+
+    const row = r.rows[0];
+
+    return res.json({
+      instructor: {
+        id: row.user_id,
+        ime: row.first_name,
+        prezime: row.last_name,
+        email: row.email,
+        bio: row.biography,
+        specializations: row.specialization ?? [],
+        averageRating: row.rating,
+        // ovo kasnije možeš puniti pravim queryjima
+        recipes: [],
+        lessons: [],
+        workshopSchedule: []
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to load instructor profile" });
+  }
+});
+
 
 export default router;

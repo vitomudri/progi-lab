@@ -269,6 +269,7 @@ export async function init_database() {
                     CONSTRAINT rating_check CHECK (rating >= 1 AND rating <= 5)
                 );
             `);
+            
 
             await client.query(`
                 CREATE TABLE Certificates (
@@ -352,6 +353,75 @@ export async function init_database() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS Reviews (
+                review_id SERIAL PRIMARY KEY,
+
+                user_id VARCHAR NOT NULL,
+                object_type TEXT NOT NULL,          -- 'lesson' | 'course' | 'instructor'
+                object_id TEXT NOT NULL,            -- course_id/lesson_id kao tekst, instructor user_id kao tekst
+
+                rating SMALLINT NOT NULL,
+                comment TEXT,
+
+                photo_file_id UUID NULL,            -- StoredFiles.file_id
+                status TEXT NOT NULL DEFAULT 'approved',  -- OPCIJA A: odmah javno; admin kasnije može "removed"
+
+                created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                moderated_at TIMESTAMP WITHOUT TIME ZONE NULL,
+                moderated_by VARCHAR NULL,
+                moderation_reason TEXT NULL,
+
+                CONSTRAINT reviews_user_id_fkey FOREIGN KEY(user_id)
+                    REFERENCES Users(user_id)
+                    ON UPDATE NO ACTION
+                    ON DELETE CASCADE,
+
+                CONSTRAINT reviews_photo_file_id_fkey FOREIGN KEY(photo_file_id)
+                    REFERENCES StoredFiles(file_id)
+                    ON UPDATE NO ACTION
+                    ON DELETE SET NULL,
+
+                CONSTRAINT reviews_moderated_by_fkey FOREIGN KEY(moderated_by)
+                    REFERENCES Users(user_id)
+                    ON UPDATE NO ACTION
+                    ON DELETE SET NULL,
+
+                CONSTRAINT reviews_object_type_check CHECK (object_type IN ('lesson','course','instructor')),
+                CONSTRAINT reviews_rating_check CHECK (rating >= 1 AND rating <= 5),
+                CONSTRAINT reviews_status_check CHECK (status IN ('approved','removed')),
+
+                -- jedan user može ostaviti samo jednu recenziju po objektu
+                CONSTRAINT reviews_one_per_user_per_object UNIQUE(user_id, object_type, object_id)
+            );
+           `);
+
+            await client.query(`CREATE INDEX IF NOT EXISTS idx_reviews_object ON Reviews(object_type, object_id);`);
+            await client.query(`CREATE INDEX IF NOT EXISTS idx_reviews_status ON Reviews(status);`);
+
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS ReviewVotes (
+                review_id INTEGER NOT NULL,
+                user_id VARCHAR NOT NULL,
+                is_helpful BOOLEAN NOT NULL DEFAULT true,
+                created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                CONSTRAINT review_votes_pkey PRIMARY KEY (review_id, user_id),
+
+                CONSTRAINT review_votes_review_id_fkey FOREIGN KEY(review_id)
+                REFERENCES Reviews(review_id)
+                ON UPDATE NO ACTION
+                ON DELETE CASCADE,
+
+                CONSTRAINT review_votes_user_id_fkey FOREIGN KEY(user_id)
+                   REFERENCES Users(user_id)
+                   ON UPDATE NO ACTION
+                   ON DELETE CASCADE
+               );
+           `);
+
+            await client.query(`CREATE INDEX IF NOT EXISTS idx_review_votes_review ON ReviewVotes(review_id);`);
+
 
             await client.query(`
                 CREATE TABLE IF NOT EXISTS LessonActivitySubmissions (

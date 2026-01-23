@@ -1,68 +1,122 @@
 <template>
   <div class="profile-page-wrapper">
-    <div class="profile-card">
+    <div v-if="loading">Učitavanje profila...</div>
+    <div v-else-if="error" style="color:red">{{ error }}</div>
+
+    <div v-else-if="profileData" class="profile-card">
       <div class="avatar-wrapper">
         <div class="avatar">
           <div class="head"></div>
           <div class="body"></div>
         </div>
 
-        <h2 class="name">{{ profileData.first_name }} {{ profileData.last_name }}</h2>
+        <h2 class="name">{{ profileData.ime }} {{ profileData.prezime }}</h2>
         <span class="badge">Instruktor</span>
         <p class="email">{{ profileData.email }}</p>
       </div>
 
       <div class="details">
-        <p><span class="label">Biografija:</span> {{ profileData.biography }}</p>
-        <p><span class="label">Specijalizacije:</span> {{ profileData.specialization }}</p>
-        <p><span class="label">Prosječna ocjena:</span> {{ profileData.rating }}</p>
+        <p><span class="label">Biografija:</span> {{ profileData.bio }}</p>
+        <p><span class="label">Specijalizacije:</span> {{ profileData.specializations }}</p>
+        <p><span class="label">Prosječna ocjena:</span> {{ profileData.averageRating }}</p>
         <!-- <p><span class="label">Recepti:</span> {{ profileData.recipes.join(', ') }}</p>
         <p><span class="label">Lekcije:</span> {{ profileData.lessons.join(', ') }}</p>
         <p><span class="label">Radionice:</span> {{ profileData.workshopSchedule.join(', ') }}</p> -->
       </div>
+      <ReviewsSection
+        :role="role"
+        objectType="instructor"
+        :objectId="encodeURIComponent(instructorId)"
+      />
+
     </div>
   </div>
 </template>
 
+
 <script setup lang="ts">
-import UserCard from "../components/UserCard.vue";
-import { ref, onMounted } from "vue";
+import ReviewsSection from "@/pages/ReviewsSection.vue";
+import { api, type Role } from "@/services/courseApi";
+import { computed } from "vue";
+
+import { ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 
 const route = useRoute();
 
-const profileData = ref({
-  first_name: "",
-  last_name: "",
-  email: "",
-  biography: "",
-  specialization: "",
-  rating: null as number | null,
-  verified: false
+type ProfileData = {
+  ime: string;
+  prezime: string;
+  email: string;
+  bio: string;
+  specializations: string[];
+  recipes: string[];
+  lessons: string[];
+  workshopSchedule: string[];
+  averageRating: number | null;
+};
+
+const profileData = ref<ProfileData | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+const role = ref<Role>(null);
+const instructorId = computed(() => {
+  const raw =
+    (route.params.id ??
+      route.params.instructor_id ??
+      route.params.instructorId) as any;
+
+  return String(raw ?? "");
 });
 
-onMounted(async () => {
-  const instructorId = route.params.id as string;
+async function loadRole() {
+  const me = await api.me();
+  role.value = me.role;
+}
+
+async function loadInstructorProfile() {
+  loading.value = true;
+  error.value = null;
 
   try {
-    const res = await fetch(`/api/v1/profile/${instructorId}`, { credentials: "include" });
-    if (!res.ok) throw new Error("Failed to load instructor profile");
+    const raw =
+      (route.params.id ??
+        route.params.instructor_id ??
+        route.params.instructorId) as any;
+
+    const instructorId = encodeURIComponent(String(raw ?? ""));
+    if (!instructorId) throw new Error("Nedostaje instructor id u ruti");
+
+    const res = await fetch(`/api/v1/instructors/${instructorId}`, {
+      credentials: "include",
+    });
 
     const data = await res.json();
-    profileData.value = {
-      first_name: data.first_name || "",
-      last_name: data.last_name || "",
-      email: data.email || "",
-      biography: data.biography || "",
-      specialization: data.specialization || "",
-      rating: data.rating || null,
-      verified: data.verified || false
-    };
-  } catch (err) {
-    console.error("Error loading instructor profile:", err);
+    if (!res.ok) throw new Error(data?.error || "Greška");
+
+    profileData.value = data.instructor;
+  } catch (e: any) {
+    error.value = e.message ?? "Greška kod učitavanja profila";
+  } finally {
+    loading.value = false;
   }
+}
+
+onMounted(async () => {
+  await loadRole();
+  await loadInstructorProfile();
 });
+
+
+// ako se promijeni instruktor bez reload-a stranice
+watch(
+  () => route.params.id,
+  () => loadInstructorProfile()
+);
 </script>
+
+
 
 <style scoped>
 .profile-page-wrapper {
