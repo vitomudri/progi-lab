@@ -33,6 +33,8 @@ services:
         condition: service_healthy
       garage:
         condition: service_started
+    volumes:
+      - ../certs/jitsi:/certs:ro
     env_file:
       - ../.env
     networks:
