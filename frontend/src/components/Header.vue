@@ -1,11 +1,13 @@
 <template>
   <header class="header">
     <nav class="nav">
-      
+
       <!-- Lijeva strana -->
       <ul class="nav-left">
         <li><router-link to="/">Početna</router-link></li>
+
         <li class="dropdown" ref="dropdownRef">
+<<<<<<< Updated upstream
         <a href="#" @click="toggleDropdown">Usluge</a>
             <div :class="['dropdown-menu', { show: showDropdown }]">
                 <a href="#">Tečajevi</a>
@@ -13,11 +15,21 @@
                 <a href="#">Moduli</a>
                 <a href="#">Recepti</a>
             </div>
+=======
+          <a href="#" @click.prevent="toggleDropdown">Usluge</a>
+          <div :class="['dropdown-menu', { show: showDropdown }]">
+            <router-link to="/courses">Tečajevi</router-link>
+            <a href="#">Lekcije</a>
+            <a href="#">Moduli</a>
+            <a href="#">Recepti</a>
+          </div>
+>>>>>>> Stashed changes
         </li>
+
         <li><router-link to="/instructors">Instruktori</router-link></li>
       </ul>
 
-      <!-- Logo u sredini -->
+      <!-- Logo -->
       <div class="logo">
         <img src="@/assets/images/logo.png" alt="Kuhari logo" />
       </div>
@@ -25,40 +37,64 @@
       <!-- Desna strana -->
       <ul class="nav-right">
         <li><router-link to="/about">O nama</router-link></li>
+
+        <!-- SEARCH IKONA -->
         <li class="search" @click="toggleSearch">
-          <i class="fa-regular fa-magnifying-glass"></i>
+          <i class="fa-solid fa-magnifying-glass"></i>
         </li>
-        <li><router-link to="/login">Prijava</router-link></li>
-        <li><router-link to="/participant-profile">Profil</router-link></li>
+
+        <!-- PRIJAVA / MOJ PROFIL -->
+        <li v-if="!isLoggedIn">
+          <router-link to="/login">Prijava</router-link>
+        </li>
+        <li v-else>
+          <router-link to="/participant-profile">Moj profil</router-link>
+        </li>
       </ul>
     </nav>
 
-    <!-- Dodatni red za pretragu -->
-   
+    <!-- SEARCH BAR -->
     <div v-if="showSearch" class="search-bar">
       <div class="search-container">
         <i class="fa-solid fa-magnifying-glass"></i>
+
         <input
           type="text"
-          placeholder="Pretraži recepte, tečajeve..."
           class="search-input"
+          placeholder="Pretraži recepte, tečajeve..."
+          v-model="query"
+          @input="onSearch"
+          @keydown.enter.prevent="onEnterSearch"
         />
+
         <i class="fa-solid fa-xmark close" @click="toggleSearch"></i>
       </div>
     </div>
   </header>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 
+/* UI state */
 const showSearch = ref(false)
 const showDropdown = ref(false)
-const dropdownRef = ref(null)
+const dropdownRef = ref<HTMLElement | null>(null)
 
+/* Auth */
+const isLoggedIn = ref(false)
+
+/* Search */
+const query = ref('')
+let searchTimeout: number | undefined
+
+/* ---------------- TOGGLES ---------------- */
 const toggleSearch = () => {
   showSearch.value = !showSearch.value
   showDropdown.value = false
+  if (!showSearch.value) {
+    query.value = ''
+  }
 }
 
 const toggleDropdown = () => {
@@ -66,16 +102,52 @@ const toggleDropdown = () => {
   showSearch.value = false
 }
 
-function handleClickOutside(event) {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+/* ---------------- CLICK OUTSIDE ---------------- */
+function handleClickOutside(event: MouseEvent) {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
     showDropdown.value = false
   }
 }
 
+/* ---------------- SEARCH LOGIC ---------------- */
+async function onSearch() {
+  clearTimeout(searchTimeout)
 
-onMounted(() => {
+  if (!query.value.trim()) return
+
+  searchTimeout = window.setTimeout(async () => {
+    try {
+      const res = await fetch(
+        `/api/v1/search/recipes?q=${encodeURIComponent(query.value)}&autocomplete=true`
+      )
+      if (!res.ok) return
+
+      const data = await res.json()
+      console.log('AUTOCOMPLETE RESULTS:', data.content)
+    } catch (err) {
+      console.error('Search error:', err)
+    }
+  }, 300)
+}
+
+function onEnterSearch() {
+  if (!query.value.trim()) return
+  console.log('ENTER SEARCH:', query.value)
+  // kasnije: router.push(`/search?q=${query.value}`)
+}
+
+/* ---------------- LIFECYCLE ---------------- */
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+
+  try {
+    const res = await fetch('/api/v1/profile/me', { credentials: 'include' })
+    isLoggedIn.value = res.ok
+  } catch {
+    isLoggedIn.value = false
+  }
 })
+
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 })
@@ -83,6 +155,7 @@ onBeforeUnmount(() => {
 
 
 <style>
+
 .nav a, .nav li, .logo, .header {
   font-family: 'Gruppo', sans-serif !important;
   font-weight: 600 !important;
@@ -96,7 +169,6 @@ onBeforeUnmount(() => {
   transition: all 0.3s ease;
   padding: 10px 0;
 }
-
 
 .nav {
   display: flex;
@@ -117,8 +189,8 @@ ul {
   cursor: pointer;
 }
 
-ul :hover{
-  color: #5a5a5a; 
+ul :hover {
+  color: #5a5a5a;
   transform: scale(1.02);
 }
 
@@ -130,7 +202,6 @@ a {
 
 .dropdown {
   position: relative;
-  cursor: pointer;
 }
 
 .dropdown-menu {
@@ -138,39 +209,22 @@ a {
   top: 150%;
   left: 50%;
   background-color: #e6dfc9;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100px; 
+  width: 100px;
   padding: 10px 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
   opacity: 0;
   transform: translate(-50%, -10px);
   pointer-events: none;
-  z-index: 1000;
 }
+
 .dropdown-menu.show {
   opacity: 1;
   transform: translate(-50%, 0);
   pointer-events: auto;
 }
-
-.dropdown-menu a {
-  width: 100%;
-  text-align: center;
-  text-decoration: none;
-  color: #2d2d2d;
-  font-size: 16px;
-  padding: 5px;
-  transition: background-color 0.2s ease;
-}
-
-.dropdown-menu a:hover {
-  color: #555;
-  transform: scale(1.02);
-}
-
 
 .logo {
   position: absolute;
@@ -180,14 +234,11 @@ a {
 
 .logo img {
   height: 70px;
-  display: block;
-  margin: 0 auto;
 }
 
 .search-bar {
   padding: 15px 0;
   border-top: 1px solid #ddd;
-  animation: slideDown 0.7s ease forwards;
   background-color: #e6dfc9;
   position: fixed;
   top: 78px;
@@ -204,8 +255,6 @@ a {
   gap: 15px;
 }
 
-
-
 .search-input {
   width: 50%;
   padding: 10px 15px;
@@ -215,35 +264,7 @@ a {
   outline: none;
 }
 
-.search-container i {
-  font-size: 16px;        
-  color: #2d2d2d;        
-  opacity: 0.8;           
-  transition: opacity 0.2s ease;
-
-}
-
-.search-container i:hover {
-  opacity: 1;             
-}
-
 .close {
-  font-size: 18px;        
-  color: #2d2d2d;
   cursor: pointer;
 }
-
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-
 </style>
