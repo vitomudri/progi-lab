@@ -20,18 +20,15 @@ search_router.get("/users", require_auth, async (req, res) => {
             FROM Users
             WHERE first_name % $1
                OR last_name % $1
-               OR user_id % $1
             ORDER BY
                 CASE
                     WHEN first_name = $1 THEN 0
                     WHEN last_name = $1 THEN 1
-                    WHEN user_id = $1 THEN 2
-                    ELSE 3
+                    ELSE 2
                 END,
                 GREATEST(
                     similarity(first_name, $1),
-                    similarity(last_name, $1),
-                    similarity(user_id, $1)
+                    similarity(last_name, $1)
                 ) DESC
             ${limitClause};
         `, [query]);

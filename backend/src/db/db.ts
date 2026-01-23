@@ -56,7 +56,6 @@ export async function init_database() {
 
             await client.query(`CREATE INDEX idx_users_first_name_trgm ON Users USING gin(first_name gin_trgm_ops);`);
             await client.query(`CREATE INDEX idx_users_last_name_trgm ON Users USING gin(last_name gin_trgm_ops);`);
-            await client.query(`CREATE INDEX idx_users_user_id_trgm ON Users USING gin(user_id gin_trgm_ops);`);
 
             await client.query(`
             CREATE TABLE Instructors (
