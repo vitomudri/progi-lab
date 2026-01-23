@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <Header />
+    <NotificationPrompt />
     <router-view />
     <Footer />
   </div>
@@ -9,6 +10,7 @@
 <script setup>
 import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
+import NotificationPrompt from './components/NotificationPrompt.vue'
 </script>
 
 <style>
