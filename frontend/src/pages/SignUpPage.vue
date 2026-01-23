@@ -3,60 +3,74 @@
     <div class="signup-card">
       <h2>Dobrodošli!</h2>
       <p>Registrirajte se kako biste započeli kuhanje s nama</p>
+
       <form @submit.prevent="handleSignup">
-        <input v-model="ime" type="text" placeholder="Ime" />
-        <input v-model="prezime" type="text" placeholder="Prezime" />
-        <input v-model="email" type="email" placeholder="Adresa e-pošte" />
-        <button type="submit">Registracija</button>
-        <router-link to="/login">Već imate račun? Prijavite se ovdje</router-link>
+        <input v-model="ime" type="text" placeholder="Ime" :disabled="isLoading" />
+        <input v-model="prezime" type="text" placeholder="Prezime" :disabled="isLoading" />
+        <input v-model="email" type="email" placeholder="Adresa e-pošte" :disabled="isLoading" />
+
+        <button type="submit" :disabled="isLoading">
+          <span v-if="isLoading">Registracija u tijeku...</span>
+          <span v-else>Registracija</span>
+        </button>
+
+        <router-link to="/login">
+          Već imate račun? Prijavite se ovdje
+        </router-link>
       </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const ime = ref('');
-const prezime = ref('');
-const email = ref('');
-const router = useRouter();
+const ime = ref('')
+const prezime = ref('')
+const email = ref('')
+const isLoading = ref(false)
+
+const router = useRouter()
 
 async function handleSignup() {
+  if (isLoading.value) return
+
   if (!ime.value || !prezime.value || !email.value) {
-    alert('Molimo ispunite sva polja.');
-    return;
+    alert('Molimo ispunite sva polja.')
+    return
   }
 
+  isLoading.value = true
+
   try {
-    const res = await fetch("/api/v1/auth/register", {
-      method: "POST",
+    const res = await fetch('/api/v1/auth/register', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         ime: ime.value,
         prezime: prezime.value,
         email: email.value
       })
-    });
+    })
 
-    const data = await res.json();
+    const data = await res.json()
 
     if (!res.ok) {
-      alert(data.error || "Greška pri registraciji.");
-      return;
+      alert(data.error || 'Greška pri registraciji.')
+      isLoading.value = false
+      return
     }
 
-    router.push("/login");
-
+    router.push('/login')
   } catch (err) {
-    console.error(err);
-    alert("Server nije dostupan.");
+    console.error(err)
+    alert('Server nije dostupan.')
+    isLoading.value = false
   }
 }
-
 </script>
 
 <style scoped>
@@ -110,6 +124,11 @@ async function handleSignup() {
   width: 100%;
   margin-bottom: 1rem;
   font-size: 1rem;
+}
+
+.signup-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .signup-card a {

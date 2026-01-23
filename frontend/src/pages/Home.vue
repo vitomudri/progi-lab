@@ -40,7 +40,7 @@ const isLoggedIn = ref(false)
 
 onMounted(async () => {
     try {
-        const authRes = await fetch("/api/v1/auth/me", { credentials: "include" });
+        const authRes = await fetch("/api/v1/profile/me", { credentials: "include" });
         isLoggedIn.value = authRes.ok;
     } catch (err) {
         console.error("Auth check failed:", err);

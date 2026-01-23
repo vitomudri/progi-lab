@@ -9,7 +9,12 @@ const schema = z.object({
     CORS_ORIGIN: z.string().default("http://localhost:5173"),
     JWT_SECRET: z.string(),
     JWT_EXPIRES_IN: z.string().default("1d"),
-    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
+    GOOGLE_REDIRECT_URI: z.string(),
+    GITHUB_CLIENT_ID: z.string(),
+    GITHUB_CLIENT_SECRET: z.string(),
+    GITHUB_REDIRECT_URI: z.string(),
     PG_HOST: z.string(),
     PG_PORT: z.coerce.number().int().positive().default(5432),
     PG_USER: z.string(),
@@ -24,11 +29,21 @@ const schema = z.object({
         .default(true),
     EMAIL_USERNAME: z.string(),
     EMAIL_PASSWORD: z.string(),
-    EMAIL_FROM: z.string()
+    EMAIL_FROM: z.string(),
+    S3_ENDPOINT: z.string(),
+    S3_ACCESS_KEY: z.string(),
+    S3_SECRET_KEY: z.string(),
+    S3_BUCKET_NAME: z.string(),
+    S3_REGION: z.string(),
+    ADMIN_EMAIL: z.string(),
+    JITSI_APP_ID: z.string(),
+    JITSI_PRIVATE_KEY_PATH: z.string(),
+    JITSI_PUBLIC_KEY_PATH: z.string(),
+    JITSI_DOMAIN: z.string(),
 });
 
 if (!PRODUCTION) {
-    dotenv.config();
+    dotenv.config({ quiet: true });
 }
 
 const parsed = schema.safeParse(process.env);
@@ -39,5 +54,7 @@ if (!parsed.success) {
 
 export const env = {
     PRODUCTION,
+    VAPID_PUBLIC_KEY: "",
+    VAPID_PRIVATE_KEY: "",
     ...parsed.data
 };

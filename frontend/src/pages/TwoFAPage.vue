@@ -1,12 +1,21 @@
 <template>
   <div class="twofa-page-wrapper">
     <div class="twofa-card">
-      <h2>Potvrdite svoj identitet</h2>
-      <p>Unesite kod koji ste primili na svoj e-mail</p>
+      <h2>Dvofaktorska autentifikacija</h2>
+      <p>Unesite kod iz vaše autentifikatorske aplikacije</p>
       <form @submit.prevent="handle2FA">
-        <input v-model="code" type="text" placeholder="Unesite kod" />
-        <button type="submit">Potvrdi</button>
-        <p class="resend" @click="resendCode">Niste primili kod? Pošalji ponovno</p>
+        <input
+          v-model="token"
+          type="text"
+          placeholder="000000"
+          maxlength="6"
+          inputmode="numeric"
+          :disabled="isLoading"
+        />
+        <button type="submit" :disabled="isLoading">
+          {{ isLoading ? "Provjera..." : "Potvrdi" }}
+        </button>
+        <p v-if="error" class="error-message">{{ error }}</p>
       </form>
     </div>
   </div>
@@ -16,20 +25,45 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-const code = ref('');
+const token = ref('');
 const router = useRouter();
+const isLoading = ref(false);
+const error = ref('');
 
-function handle2FA() {
-  if (!code.value) {
-    //alert('Molimo unesite kod.');
+async function handle2FA() {
+  if (!token.value || token.value.length !== 6) {
+    error.value = 'Molimo unesite 6-znamenkasti kod.';
     return;
   }
-  //console.log('2FA kod:', code.value);
-  router.push('/participant-profile');
-}
 
-function resendCode() {
-  console.log("Ponovno šaljem kod korisniku...");
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    const res = await fetch('/api/v1/auth/2fa/verify-token', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: token.value
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      error.value = data.error || 'Pogrešan kod. Pokušajte ponovno.';
+      token.value = '';
+      return;
+    }
+
+    // Redirect to profile
+    router.push('/participant-profile');
+  } catch (err) {
+    error.value = 'Greška na serveru. Pokušajte ponovno.';
+  } finally {
+    isLoading.value = false;
+  }
 }
 </script>
 
@@ -73,6 +107,14 @@ function resendCode() {
   width: 100%;
   margin-bottom: 1rem;
   padding: 1rem;
+  font-size: 1.5rem;
+  text-align: center;
+  letter-spacing: 0.5rem;
+}
+
+.twofa-card input:disabled {
+  background-color: #F0F0F0;
+  cursor: not-allowed;
 }
 
 .twofa-card button {
@@ -84,17 +126,22 @@ function resendCode() {
   width: 100%;
   margin-bottom: 1rem;
   font-size: 1rem;
-}
-
-.resend {
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: #000;
-  text-decoration: underline;
   transition: background-color 0.2s;
 }
 
-.resend:hover {
-  color: #555;
+.twofa-card button:hover:not(:disabled) {
+  background-color: #D4C9B0;
+}
+
+.twofa-card button:disabled {
+  background-color: #D0D0D0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
 }
 </style>

@@ -1,10 +1,12 @@
 import { Router } from "express";
 import createError from "http-errors";
-import v1 from "./routes/v1/v1.js";
+import { maybe_auth } from "../middleware/auth.js";
+import log from "../middleware/log.js";
+import v1 from "./v1/v1.js";
 
 const router = Router();
 
-router.use("/v1", v1);
+router.use("/v1", maybe_auth, log, v1);
 
 router.use("/healthcheck", (req, res) => {
     res.status(200).send("OK");
