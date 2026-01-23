@@ -103,7 +103,6 @@ router.get("/me", require_auth, async (req, res) => {
     }
 });
 router.get("/", async (req, res) => {
-console.log("Fetching verified instructors");
   try {
     const r = await pool.query(
       `SELECT
