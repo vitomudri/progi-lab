@@ -14,7 +14,7 @@ export default function init_scheduler() {
                     lw.title,
                     lw.description,
                     lw.date_time,
-                    u.user_id,
+                    u.user_id
                 FROM LiveWorkshops lw
                 JOIN Reservations r ON lw.workshop_id = r.workshop_id
                 JOIN Users u ON r.user_id = u.user_id
