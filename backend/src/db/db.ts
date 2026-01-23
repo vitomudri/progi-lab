@@ -106,6 +106,7 @@ export async function init_database() {
                     difficulty SMALLINT,
                     instructor_id VARCHAR,
                     rating NUMERIC(3,2),
+                    is_published BOOLEAN NOT NULL DEFAULT false,
                     published_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT instructor_id_fkey FOREIGN KEY(instructor_id)
                         REFERENCES Users(user_id)
@@ -123,37 +124,80 @@ export async function init_database() {
                 CREATE TABLE Modules (
                     module_id SERIAL PRIMARY KEY,
                     title VARCHAR,
-                    description VARCHAR,
                     course_id INTEGER,
+                    order_index INTEGER NOT NULL,
+
                     CONSTRAINT course_id_fkey FOREIGN KEY(course_id)
                         REFERENCES Courses(course_id)
                         ON UPDATE NO ACTION
-                        ON DELETE CASCADE
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT module_course_order_unique UNIQUE(course_id, order_index)
                 );
             `);
 
             await client.query(`CREATE INDEX idx_modules_title_trgm ON Modules USING gin(title gin_trgm_ops);`);
-            await client.query(`CREATE INDEX idx_modules_description_trgm ON Modules USING gin(description gin_trgm_ops);`);
 
             await client.query(`
                 CREATE TABLE Lessons (
                     lesson_id SERIAL PRIMARY KEY,
-                    title VARCHAR,
-                    description VARCHAR,
-                    video_url VARCHAR,
-                    duration INTEGER,
-                    difficulty SMALLINT,
                     module_id INTEGER,
-                    CONSTRAINT module_id_fkey FOREIGN KEY(module_id)
+                    title VARCHAR,
+                    order_index INTEGER NOT NULL,
+                    type TEXT NOT NULL,
+
+                    content TEXT,
+                    video_url TEXT,
+
+                    steps_text TEXT,
+                    ingredients_text TEXT,
+
+                    prep_time_min INTEGER,
+                    cook_time_min INTEGER,
+                    difficulty TEXT,
+
+                    shopping_list TEXT,
+                    allergens TEXT,
+                    nutrition JSONB,
+
+                    CONSTRAINT lessons_module_id_fkey
+                        FOREIGN KEY (module_id)
                         REFERENCES Modules(module_id)
                         ON UPDATE NO ACTION
                         ON DELETE CASCADE,
-                    CONSTRAINT difficulty_check CHECK (difficulty >= 1 AND difficulty <= 5)
+
+                    CONSTRAINT lessons_unique_order
+                        UNIQUE (module_id, order_index),
+
+                    CONSTRAINT lessons_type_check
+                        CHECK (type IN ('video', 'text', 'recipe')),
+
+                    CONSTRAINT lessons_difficulty_check
+                        CHECK (difficulty IS NULL OR difficulty IN ('easy', 'medium', 'hard'))
                 );
             `);
 
             await client.query(`CREATE INDEX idx_lessons_title_trgm ON Lessons USING gin(title gin_trgm_ops);`);
-            await client.query(`CREATE INDEX idx_lessons_description_trgm ON Lessons USING gin(description gin_trgm_ops);`);
+
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS LessonActivities (
+                    activity_id SERIAL PRIMARY KEY,
+                    lesson_id INTEGER NOT NULL,
+
+                    type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    is_required BOOLEAN NOT NULL DEFAULT false,
+
+                    CONSTRAINT lesson_activities_lesson_id_fkey FOREIGN KEY (lesson_id)
+                        REFERENCES Lessons(lesson_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT lesson_activities_type_check
+                        CHECK (type IN ('quiz', 'photo_upload'))
+                );
+            `);
 
             await client.query(`
                 CREATE TABLE Recipes (
@@ -309,9 +353,74 @@ export async function init_database() {
                 );
             `);
 
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS LessonActivitySubmissions (
+                    submission_id SERIAL PRIMARY KEY,
+                    activity_id INTEGER NOT NULL,
+                    student_id VARCHAR NOT NULL,
+
+                    answer JSONB,
+                    file_id UUID,
+
+                    status TEXT NOT NULL DEFAULT 'submitted',
+                    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                    CONSTRAINT lesson_activity_submissions_activity_id_fkey FOREIGN KEY (activity_id)
+                        REFERENCES LessonActivities(activity_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT lesson_activity_submissions_student_id_fkey FOREIGN KEY (student_id)
+                        REFERENCES Users(user_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT lesson_activity_submissions_file_id_fkey FOREIGN KEY (file_id)
+                        REFERENCES StoredFiles(file_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE SET NULL,
+
+                    CONSTRAINT lesson_activity_submissions_status_check CHECK (status IN ('submitted', 'approved', 'rejected')),
+                    CONSTRAINT lesson_activity_submissions_unique UNIQUE (activity_id, student_id)
+                );
+            `);
+
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS LessonComments (
+                    comment_id SERIAL PRIMARY KEY,
+                    lesson_id INTEGER NOT NULL,
+                    user_id VARCHAR NOT NULL,
+
+                    parent_comment_id INTEGER,
+                    kind TEXT NOT NULL DEFAULT 'comment',
+                    content TEXT NOT NULL,
+
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                    CONSTRAINT lesson_comments_lesson_id_fkey FOREIGN KEY (lesson_id)
+                        REFERENCES Lessons(lesson_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT lesson_comments_user_id_fkey FOREIGN KEY (user_id)
+                        REFERENCES Users(user_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT lesson_comments_parent_comment_id_fkey FOREIGN KEY (parent_comment_id)
+                        REFERENCES LessonComments(comment_id)
+                        ON UPDATE NO ACTION
+                        ON DELETE CASCADE,
+
+                    CONSTRAINT lesson_comments_kind_check CHECK (kind IN ('comment', 'question', 'answer')),
+                    CONSTRAINT lesson_comments_status_check CHECK (status IN ('pending', 'approved', 'rejected'))
+                );
+            `);
+
             await client.query("COMMIT");
 
-            let user = await User.new({"email": env.ADMIN_EMAIL, "first_name": "System", "last_name": "Admin"});
+            let user = await User.new({ email: env.ADMIN_EMAIL, first_name: "System", last_name: "Admin" });
             user.role = "admin";
             await user.save();
 
