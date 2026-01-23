@@ -41,6 +41,13 @@
             {{ c.is_published ? "PUBLISHED" : "DRAFT" }}
           </span>
         </div>
+        <p class="instructor" v-if="c.instructor">
+  {{ c.instructor.first_name }} {{ c.instructor.last_name }}
+</p>
+<p class="instructor" v-else>
+  —
+</p>
+
       </router-link>
     </div>
 
@@ -100,9 +107,16 @@ type CourseSummary = {
   title: string;
   is_published: boolean;
 
+  instructor: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+  } | null;
+
   // lokalno za UI
   _editTitle?: string;
 };
+
 
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -433,4 +447,10 @@ onMounted(async () => {
   width: 280px;
   background-color: #fffffd;
 }
+.instructor {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
 </style>

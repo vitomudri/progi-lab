@@ -32,7 +32,11 @@
         <button class="btn small" v-else @click="unpublishCourse">Unpublish</button>
       </div>
     </section>
-
+    <ReviewsSection
+      :role="role"
+      objectType="course"
+      :objectId="String(courseId)"
+    />
     <!-- ADD MODULE -->
     <section v-if="canManage" class="card">
       <h2 style="margin: 0 0 10px;">Dodaj modul</h2>
@@ -54,6 +58,8 @@ import { useRoute } from "vue-router";
 import LessonViewer from "@/pages/LessonViewer.vue";
 import LessonActivities from "@/pages/LessonActivities.vue";
 import ModuleList from "@/pages/ModuleList.vue";
+import ReviewsSection from "@/pages/ReviewsSection.vue";
+
 
 import { api, type Course, type ModuleSummary, type Role, type LessonDetail, type LessonSummary } from "@/services/courseApi";
 

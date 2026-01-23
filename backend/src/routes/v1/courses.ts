@@ -49,30 +49,100 @@ const CreateModuleSchema = z.object({
 router.get("/", maybe_auth, async (req, res) => {
     const user = req.context.user;
 
-    // guest ili student -> published
+    // guest ili student -> samo published
     if (!user || user.role === "student") {
-        const courses = await Course.list_published(100);
-        return res.json({ courses });
+        const result = await pool.query(
+            `SELECT
+                c."course_id",
+                c."title",
+                c."is_published",
+                c."instructor_id",
+                u."first_name" AS "instructor_first_name",
+                u."last_name"  AS "instructor_last_name"
+             FROM "courses" c
+             LEFT JOIN "users" u ON u."user_id" = c."instructor_id"
+             WHERE c."is_published" = true
+             ORDER BY c."course_id" DESC
+             LIMIT 200`
+        );
+
+        return res.json({
+            courses: result.rows.map((r) => ({
+                course_id: r.course_id,
+                title: r.title,
+                is_published: !!r.is_published,
+                instructor: r.instructor_id
+                    ? {
+                          user_id: r.instructor_id,
+                          first_name: r.instructor_first_name,
+                          last_name: r.instructor_last_name
+                      }
+                    : null
+            }))
+        });
     }
 
-    // instructor -> svoje
+    // instructor -> samo svoje (draft + published)
     if (user.role === "instructor") {
-        const courses = await Course.list_by_instructor(user.user_id as any, 100);
-        return res.json({ courses });
+        const result = await pool.query(
+            `SELECT
+                c."course_id",
+                c."title",
+                c."is_published",
+                c."instructor_id",
+                u."first_name" AS "instructor_first_name",
+                u."last_name"  AS "instructor_last_name"
+             FROM "courses" c
+             LEFT JOIN "users" u ON u."user_id" = c."instructor_id"
+             WHERE c."instructor_id" = $1
+             ORDER BY c."course_id" DESC
+             LIMIT 200`,
+            [user.user_id]
+        );
+
+        return res.json({
+            courses: result.rows.map((r) => ({
+                course_id: r.course_id,
+                title: r.title,
+                is_published: !!r.is_published,
+                instructor: r.instructor_id
+                    ? {
+                          user_id: r.instructor_id,
+                          first_name: r.instructor_first_name,
+                          last_name: r.instructor_last_name
+                      }
+                    : null
+            }))
+        });
     }
 
-    // admin -> sve (direktno iz baze, jer Course nema list_all())
+    // admin -> sve
     const result = await pool.query(
-        `SELECT "course_id", "title", "is_published"
-         FROM "courses"
-         ORDER BY "course_id" DESC
+        `SELECT
+            c."course_id",
+            c."title",
+            c."is_published",
+            c."instructor_id",
+            u."first_name" AS "instructor_first_name",
+            u."last_name"  AS "instructor_last_name"
+         FROM "courses" c
+         LEFT JOIN "users" u ON u."user_id" = c."instructor_id"
+         ORDER BY c."course_id" DESC
          LIMIT 200`
     );
+
     return res.json({
         courses: result.rows.map((r) => ({
             course_id: r.course_id,
             title: r.title,
-            is_published: !!r.is_published
+            is_published: !!r.is_published,
+            instructor: r.instructor_id
+                ? {
+                      user_id: r.instructor_id,
+                      first_name: r.instructor_first_name,
+                      last_name: r.instructor_last_name
+                  }
+                : null
         }))
     });
 });

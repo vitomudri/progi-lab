@@ -23,12 +23,22 @@
         <p><span class="label">Lekcije:</span> {{ profileData.lessons.join(', ') }}</p>
         <p><span class="label">Radionice:</span> {{ profileData.workshopSchedule.join(', ') }}</p> -->
       </div>
+      <ReviewsSection
+        :role="role"
+        objectType="instructor"
+        :objectId="encodeURIComponent(instructorId)"
+      />
+
     </div>
   </div>
 </template>
 
 
 <script setup lang="ts">
+import ReviewsSection from "@/pages/ReviewsSection.vue";
+import { api, type Role } from "@/services/courseApi";
+import { computed } from "vue";
+
 import { ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 
@@ -49,6 +59,21 @@ type ProfileData = {
 const profileData = ref<ProfileData | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const role = ref<Role>(null);
+const instructorId = computed(() => {
+  const raw =
+    (route.params.id ??
+      route.params.instructor_id ??
+      route.params.instructorId) as any;
+
+  return String(raw ?? "");
+});
+
+async function loadRole() {
+  const me = await api.me();
+  role.value = me.role;
+}
 
 async function loadInstructorProfile() {
   loading.value = true;
@@ -78,7 +103,11 @@ async function loadInstructorProfile() {
   }
 }
 
-onMounted(loadInstructorProfile);
+onMounted(async () => {
+  await loadRole();
+  await loadInstructorProfile();
+});
+
 
 // ako se promijeni instruktor bez reload-a stranice
 watch(

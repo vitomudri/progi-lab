@@ -24,7 +24,13 @@
         </div>
 
         <h3 class="name">{{ instructor.name }}</h3>
-        <p class="rating">Prosj. ocjena: {{ instructor.rating }}</p>
+        <p class="rating" v-if="instructor.review_count > 0">
+           Prosj. ocjena: {{ instructor.rating.toFixed(1) }} ({{ instructor.review_count }})
+        </p>
+        <p class="rating" v-else>
+            Još nema ocjena
+        </p>
+
       </div>
     </section>
   </div>
@@ -40,6 +46,7 @@ type Instructor = {
   id: string;        // UUID
   name: string;
   rating: number | null;
+  ratingCount: number | null;
   biography?: string | null;
   specialization?: string | null;
 };

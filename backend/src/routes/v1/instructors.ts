@@ -109,20 +109,31 @@ router.get("/", async (req, res) => {
          u.user_id as id,
          u.first_name,
          u.last_name,
-         i.rating,
          i.biography,
-         i.specialization
+         i.specialization,
+
+         COALESCE(ROUND(AVG(rv.rating)::numeric, 2), 0) AS avg_rating,
+         COUNT(rv.review_id)::int AS review_count
+
        FROM instructors i
        JOIN "users" u ON u.user_id = i.instructor_id
+
+       LEFT JOIN "reviews" rv
+         ON rv.object_type = 'instructor'
+        AND rv.object_id = u.user_id
+        AND rv.status = 'approved'
+
        WHERE i.verified = true
-       ORDER BY i.rating DESC NULLS LAST, u.last_name ASC, u.first_name ASC`
+       GROUP BY u.user_id, u.first_name, u.last_name, i.biography, i.specialization
+       ORDER BY avg_rating DESC NULLS LAST, review_count DESC, u.last_name ASC, u.first_name ASC`
     );
 
     return res.json({
       instructors: r.rows.map((x) => ({
-        id: x.id, // UUID string
+        id: x.id,
         name: `${x.first_name} ${x.last_name}`,
-        rating: x.rating ?? null,
+        rating: Number(x.avg_rating),          // <- prosjek iz Reviews
+        review_count: Number(x.review_count),  // <- broj recenzija
         biography: x.biography ?? null,
         specialization: x.specialization ?? null,
       })),
@@ -132,6 +143,7 @@ router.get("/", async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch instructors" });
   }
 });
+
 /**
  * GET /v1/instructors/:instructor_id
  * Public profil instruktora
