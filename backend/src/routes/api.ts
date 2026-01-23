@@ -1,8 +1,8 @@
 import { Router } from "express";
 import createError from "http-errors";
-import { maybe_auth } from "./middleware/auth.js";
-import log from "./middleware/log.js";
-import v1 from "./routes/v1/v1.js";
+import { maybe_auth } from "../middleware/auth.js";
+import log from "../middleware/log.js";
+import v1 from "./v1/v1.js";
 
 const router = Router();
 

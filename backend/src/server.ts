@@ -5,7 +5,7 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
-import api_router from "./api.js";
+import api_router from "./routes/api.js";
 import { init_context } from "./middleware/context.js";
 import init_scheduler from "./scheduler.js";
 
