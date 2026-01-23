@@ -54,5 +54,7 @@ if (!parsed.success) {
 
 export const env = {
     PRODUCTION,
+    VAPID_PUBLIC_KEY: "",
+    VAPID_PRIVATE_KEY: "",
     ...parsed.data
 };
