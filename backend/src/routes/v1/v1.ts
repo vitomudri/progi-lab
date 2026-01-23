@@ -10,6 +10,7 @@ import modules_router from "./modules.js";
 import lessons_router from "./lessons.js";
 import search_router from "./search.js";
 import reviews_router from "./reviews.js";
+import live_router from "./live.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/modules", modules_router);
 router.use("/lessons", lessons_router);
 router.use("/search", search_router);
 router.use("/reviews", reviews_router);
+router.use("/live", live_router);
 
 export default router;
