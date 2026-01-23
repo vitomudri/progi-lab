@@ -2,6 +2,7 @@ import pg from "pg";
 import { env } from "../env.js";
 import pkg from "../../package.json" with { type: "json" };
 import { User, Admin } from "../models/User.js";
+import webpush from "web-push";
 
 export const pool = new pg.Pool({
     user: env.PG_USER,
@@ -30,10 +31,16 @@ export async function init_database() {
             await client.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
             await client.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
 
+            const new_vapid_keys = webpush.generateVAPIDKeys();
             await client.query(`
                 INSERT INTO metadata (key, value)
-                VALUES ('version', '${pkg.version}');
+                VALUES
+                    ('version', '${pkg.version}'),
+                    ('vapid_public_key', '${new_vapid_keys.publicKey}'),
+                    ('vapid_private_key', '${new_vapid_keys.privateKey}');
             `);
+            env.VAPID_PUBLIC_KEY = new_vapid_keys.publicKey;
+            env.VAPID_PRIVATE_KEY = new_vapid_keys.privateKey;
 
             await client.query(`
                 CREATE TABLE Users (
@@ -269,7 +276,6 @@ export async function init_database() {
                     CONSTRAINT rating_check CHECK (rating >= 1 AND rating <= 5)
                 );
             `);
-            
 
             await client.query(`
                 CREATE TABLE Certificates (
@@ -357,7 +363,7 @@ export async function init_database() {
                 CREATE TABLE IF NOT EXISTS Reviews (
                 review_id SERIAL PRIMARY KEY,
 
-                user_id VARCHAR NOT NULL,
+                user_id UUID NOT NULL,
                 object_type TEXT NOT NULL,          -- 'lesson' | 'course' | 'instructor'
                 object_id TEXT NOT NULL,            -- course_id/lesson_id kao tekst, instructor user_id kao tekst
 
@@ -369,7 +375,7 @@ export async function init_database() {
 
                 created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 moderated_at TIMESTAMP WITHOUT TIME ZONE NULL,
-                moderated_by VARCHAR NULL,
+                moderated_by UUID NULL,
                 moderation_reason TEXT NULL,
 
                 CONSTRAINT reviews_user_id_fkey FOREIGN KEY(user_id)
@@ -402,7 +408,7 @@ export async function init_database() {
             await client.query(`
                 CREATE TABLE IF NOT EXISTS ReviewVotes (
                 review_id INTEGER NOT NULL,
-                user_id VARCHAR NOT NULL,
+                user_id UUID NOT NULL,
                 is_helpful BOOLEAN NOT NULL DEFAULT true,
                 created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -501,6 +507,9 @@ export async function init_database() {
             throw err;
         }
     } else {
+        env.VAPID_PUBLIC_KEY = (await client.query(`SELECT value FROM metadata WHERE key = 'vapid_public_key';`)).rows[0].value;
+        env.VAPID_PRIVATE_KEY = (await client.query(`SELECT value FROM metadata WHERE key = 'vapid_private_key';`)).rows[0].value;
+
         /** @todo Database exists, but might be for an older version of the app? Extra checks need to be made; If need be, upgrade logic should be implemented here. */
     }
 
