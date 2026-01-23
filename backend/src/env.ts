@@ -39,7 +39,7 @@ const schema = z.object({
 });
 
 if (!PRODUCTION) {
-    dotenv.config();
+    dotenv.config({ quiet: true });
 }
 
 const parsed = schema.safeParse(process.env);

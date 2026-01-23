@@ -37,7 +37,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Users (
-                    user_id VARCHAR PRIMARY KEY,
+                    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     first_name VARCHAR NOT NULL,
                     last_name VARCHAR NOT NULL,
                     email VARCHAR NOT NULL,
@@ -47,6 +47,7 @@ export async function init_database() {
                     role VARCHAR,
                     must_change_password BOOLEAN DEFAULT true,
                     totp_secret VARCHAR,
+                    calendar_key UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
                     CONSTRAINT email_key UNIQUE(email),
                     CONSTRAINT status_check CHECK (status IN ('active', 'blocked', 'unverified')),
                     CONSTRAINT role_check CHECK (role IN ('student', 'instructor', 'admin'))
@@ -55,11 +56,10 @@ export async function init_database() {
 
             await client.query(`CREATE INDEX idx_users_first_name_trgm ON Users USING gin(first_name gin_trgm_ops);`);
             await client.query(`CREATE INDEX idx_users_last_name_trgm ON Users USING gin(last_name gin_trgm_ops);`);
-            await client.query(`CREATE INDEX idx_users_user_id_trgm ON Users USING gin(user_id gin_trgm_ops);`);
 
             await client.query(`
             CREATE TABLE Instructors (
-                    instructor_id VARCHAR PRIMARY KEY,
+                    instructor_id UUID PRIMARY KEY,
                     biography TEXT,
                     specialization VARCHAR,
                     rating NUMERIC(3,2),
@@ -75,7 +75,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Admins (
-                    admin_id VARCHAR PRIMARY KEY,
+                    admin_id UUID PRIMARY KEY,
                     access_level VARCHAR,
                     CONSTRAINT admin_id_fkey FOREIGN KEY(admin_id)
                         REFERENCES Users(user_id)
@@ -86,7 +86,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Students (
-                    student_id VARCHAR PRIMARY KEY,
+                    student_id UUID PRIMARY KEY,
                     skill_level VARCHAR,
                     dietary_preferences VARCHAR,
                     favorite_cuisines VARCHAR,
@@ -104,7 +104,7 @@ export async function init_database() {
                     title VARCHAR NOT NULL,
                     description VARCHAR,
                     difficulty SMALLINT,
-                    instructor_id VARCHAR,
+                    instructor_id UUID,
                     rating NUMERIC(3,2),
                     is_published BOOLEAN NOT NULL DEFAULT false,
                     published_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -201,7 +201,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Recipes (
-                    recipe_id VARCHAR PRIMARY KEY,
+                    recipe_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     name VARCHAR,
                     description VARCHAR,
                     prep_time INTEGER,
@@ -226,7 +226,7 @@ export async function init_database() {
                     seat_number INTEGER,
                     duration INTEGER,
                     recording_url TEXT,
-                    instructor_id VARCHAR,
+                    instructor_id UUID,
                     CONSTRAINT instructor_id_fkey FOREIGN KEY(instructor_id)
                         REFERENCES Users(user_id)
                         ON UPDATE NO ACTION
@@ -237,7 +237,7 @@ export async function init_database() {
             await client.query(`
                 CREATE TABLE Reservations (
                     reservation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    user_id VARCHAR,
+                    user_id UUID,
                     workshop_id UUID,
                     status VARCHAR DEFAULT 'confirmed',
                     CONSTRAINT user_id_fkey FOREIGN KEY(user_id)
@@ -255,7 +255,7 @@ export async function init_database() {
             await client.query(`
                 CREATE TABLE RatingsReviews (
                     review_id SERIAL PRIMARY KEY,
-                    user_id VARCHAR,
+                    user_id UUID,
                     object_type VARCHAR NOT NULL,
                     object_id INTEGER,
                     rating SMALLINT,
@@ -274,7 +274,7 @@ export async function init_database() {
             await client.query(`
                 CREATE TABLE Certificates (
                     certificate_id SERIAL PRIMARY KEY,
-                    student_id VARCHAR,
+                    student_id UUID,
                     course_id INTEGER,
                     issued_date DATE DEFAULT CURRENT_DATE,
                     pdf_url TEXT,
@@ -293,7 +293,7 @@ export async function init_database() {
             await client.query(`
                 CREATE TABLE AuditLogs (
                     log_id SERIAL PRIMARY KEY,
-                    user_id VARCHAR,
+                    user_id UUID,
                     action TEXT,
                     date_time TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT user_id_fkey FOREIGN KEY(user_id)
@@ -305,15 +305,15 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Tags (
-                    tag_id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+                    tag_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     name VARCHAR
                 );
             `);
 
             await client.query(`
                 CREATE TABLE StudentTags (
-                    student_id VARCHAR NOT NULL,
-                    tag_id VARCHAR NOT NULL,
+                    student_id UUID NOT NULL,
+                    tag_id UUID NOT NULL,
                     CONSTRAINT student_tag_pkey PRIMARY KEY(student_id, tag_id),
                     CONSTRAINT student_id_fkey FOREIGN KEY(student_id)
                         REFERENCES Students(student_id)
@@ -328,8 +328,8 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE RecipesTags (
-                    recipe_id VARCHAR NOT NULL,
-                    tag_id VARCHAR NOT NULL,
+                    recipe_id UUID NOT NULL,
+                    tag_id UUID NOT NULL,
                     CONSTRAINT recipe_tag_pkey PRIMARY KEY(recipe_id, tag_id),
                     CONSTRAINT recipe_id_fkey FOREIGN KEY(recipe_id)
                         REFERENCES Recipes(recipe_id)
@@ -427,7 +427,7 @@ export async function init_database() {
                 CREATE TABLE IF NOT EXISTS LessonActivitySubmissions (
                     submission_id SERIAL PRIMARY KEY,
                     activity_id INTEGER NOT NULL,
-                    student_id VARCHAR NOT NULL,
+                    student_id UUID NOT NULL,
 
                     answer JSONB,
                     file_id UUID,
@@ -459,7 +459,7 @@ export async function init_database() {
                 CREATE TABLE IF NOT EXISTS LessonComments (
                     comment_id SERIAL PRIMARY KEY,
                     lesson_id INTEGER NOT NULL,
-                    user_id VARCHAR NOT NULL,
+                    user_id UUID NOT NULL,
 
                     parent_comment_id INTEGER,
                     kind TEXT NOT NULL DEFAULT 'comment',

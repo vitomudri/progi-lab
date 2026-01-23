@@ -11,6 +11,7 @@ import lessons_router from "./lessons.js";
 import search_router from "./search.js";
 import reviews_router from "./reviews.js";
 import live_router from "./live.js";
+import calendar_router from "./calendar.js";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/lessons", lessons_router);
 router.use("/search", search_router);
 router.use("/reviews", reviews_router);
 router.use("/live", live_router);
+router.use("/calendar", calendar_router);
 
 export default router;
