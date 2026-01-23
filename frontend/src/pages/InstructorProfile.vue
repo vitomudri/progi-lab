@@ -7,36 +7,60 @@
           <div class="body"></div>
         </div>
 
-        <h2 class="name">{{ profileData.ime }} {{ profileData.prezime }}</h2>
+        <h2 class="name">{{ profileData.first_name }} {{ profileData.last_name }}</h2>
         <span class="badge">Instruktor</span>
         <p class="email">{{ profileData.email }}</p>
       </div>
 
       <div class="details">
-        <p><span class="label">Biografija:</span> {{ profileData.bio }}</p>
-        <p><span class="label">Specijalizacije:</span> {{ profileData.specializations.join(', ') }}</p>
-        <p><span class="label">Prosječna ocjena:</span> {{ profileData.averageRating }}</p>
-        <p><span class="label">Recepti:</span> {{ profileData.recipes.join(', ') }}</p>
+        <p><span class="label">Biografija:</span> {{ profileData.biography }}</p>
+        <p><span class="label">Specijalizacije:</span> {{ profileData.specialization }}</p>
+        <p><span class="label">Prosječna ocjena:</span> {{ profileData.rating }}</p>
+        <!-- <p><span class="label">Recepti:</span> {{ profileData.recipes.join(', ') }}</p>
         <p><span class="label">Lekcije:</span> {{ profileData.lessons.join(', ') }}</p>
-        <p><span class="label">Radionice:</span> {{ profileData.workshopSchedule.join(', ') }}</p>
+        <p><span class="label">Radionice:</span> {{ profileData.workshopSchedule.join(', ') }}</p> -->
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import UserCard from "../components/UserCard.vue";
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
 
 const profileData = ref({
-  ime: "Ana",
-  prezime: "Horvat",
-  email: "ana@example.com",
-  bio: "Iskusna kuharica sa 15 godina iskustva u talijanskoj i japanskoj kuhinji.",
-  specializations: ["Talijanska", "Japanska", "Veganska"],
-  recipes: ["Pizza Margherita", "Sushi Roll", "Veganski burger"],
-  lessons: ["Osnove talijanske kuhinje", "Napredni sushi tečaj"],
-  workshopSchedule: ["Ponedjeljak 18–20", "Srijeda 17–19"],
-  averageRating: 4.8
+  first_name: "",
+  last_name: "",
+  email: "",
+  biography: "",
+  specialization: "",
+  rating: null as number | null,
+  verified: false
+});
+
+onMounted(async () => {
+  const instructorId = route.params.id as string;
+
+  try {
+    const res = await fetch(`/api/v1/profile/${instructorId}`, { credentials: "include" });
+    if (!res.ok) throw new Error("Failed to load instructor profile");
+
+    const data = await res.json();
+    profileData.value = {
+      first_name: data.first_name || "",
+      last_name: data.last_name || "",
+      email: data.email || "",
+      biography: data.biography || "",
+      specialization: data.specialization || "",
+      rating: data.rating || null,
+      verified: data.verified || false
+    };
+  } catch (err) {
+    console.error("Error loading instructor profile:", err);
+  }
 });
 </script>
 

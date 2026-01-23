@@ -8,7 +8,7 @@ import admin_router from "./admin.js";
 import courses_router from "./courses.js";
 import modules_router from "./modules.js";
 import lessons_router from "./lessons.js";
-
+import search_router from "./search.js";
 
 const router = Router();
 
@@ -21,5 +21,6 @@ router.use("/admin", admin_router);
 router.use("/courses", courses_router);
 router.use("/modules", modules_router);
 router.use("/lessons", lessons_router);
+router.use("/search", search_router)
 
 export default router;
