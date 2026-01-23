@@ -2,10 +2,18 @@ import type { UUID } from "crypto";
 import { pool } from "./db/db.js";
 import { EmailBuilder } from "./email/email.js";
 import { User } from "./models/User.js";
+import webpush from "web-push";
+import { env } from "./env.js";
 
 let processed: Set<{workshop_id: UUID, user_id: UUID, threshold: string}> = new Set();
 
 export default function init_scheduler() {
+    webpush.setVapidDetails(
+        env.CORS_ORIGIN,
+        env.VAPID_PUBLIC_KEY,
+        env.VAPID_PRIVATE_KEY
+    );
+
     const checkUpcomingWorkshops = async () => {
         try {
             const result = await pool.query(`
