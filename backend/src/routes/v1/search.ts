@@ -89,20 +89,15 @@ search_router.get("/modules", async (req, res) => {
         const limitClause = autocomplete ? "LIMIT 5" : "";
 
         const result = await pool.query(`
-            SELECT module_id, title, description
+            SELECT module_id, title
             FROM Modules
             WHERE title % $1
-               OR description % $1
             ORDER BY
                 CASE
                     WHEN title = $1 THEN 0
-                    WHEN description = $1 THEN 1
-                    ELSE 2
+                    ELSE 1
                 END,
-                GREATEST(
-                    similarity(title, $1),
-                    similarity(description, $1)
-                ) DESC
+                similarity(title, $1) DESC
             ${limitClause};
         `, [query]);
 
@@ -124,20 +119,15 @@ search_router.get("/lessons", async (req, res) => {
         const limitClause = autocomplete ? "LIMIT 5" : "";
 
         const result = await pool.query(`
-            SELECT lesson_id, title, description
+            SELECT lesson_id, title
             FROM Lessons
             WHERE title % $1
-               OR description % $1
             ORDER BY
                 CASE
                     WHEN title = $1 THEN 0
-                    WHEN description = $1 THEN 1
-                    ELSE 2
+                    ELSE 1
                 END,
-                GREATEST(
-                    similarity(title, $1),
-                    similarity(description, $1)
-                ) DESC
+                similarity(title, $1) DESC
             ${limitClause};
         `, [query]);
 
