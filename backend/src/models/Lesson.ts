@@ -12,7 +12,6 @@ export const NutritionSchema = z.record(z.string(), z.any());
  // JSONB (minimalno)
 export type Nutrition = z.infer<typeof NutritionSchema>;
 
-console.log("LESSONS ROUTER LOADED");
 
 
 export const NewLessonOptionsSchema = z.object({

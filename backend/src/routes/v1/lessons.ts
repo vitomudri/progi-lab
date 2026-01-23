@@ -7,7 +7,6 @@ import { Course } from "../../models/Course.js";
 import { pool } from "../../db/db.js";
 
 const router = Router();
-console.log("LESSONS ROUTER LOADED");
 
 async function getCourseForLesson(lesson_id: number) {
     const lesson = await Lesson.from_db({ lesson_id });
@@ -90,7 +89,6 @@ const SubmitSchema = z.object({
  */
 
 router.get("/activities/:lesson_id", maybe_auth, async (req, res) => {
-  console.log("LESSONS ROUTER LOADEDhit activities");
   const lesson_id = Number(req.params.lesson_id);
   if (!Number.isInteger(lesson_id) || lesson_id <= 0) return res.status(400).json({ error: "Invalid lesson_id" });
   const data = await getCourseForLesson(lesson_id);
@@ -99,18 +97,45 @@ router.get("/activities/:lesson_id", maybe_auth, async (req, res) => {
   const user = req.context.user;
 
   // student/guest: samo ako published
-  if (!user || user.role === "student") {
+    if (!user || user.role === "student") {
     if (!data.course.is_published) return res.status(404).json({ error: "Lesson not found" });
 
+    // guest (nije ulogiran) -> nema has_submitted (ili uvijek false)
+    if (!user) {
+      const r = await pool.query(
+        `SELECT activity_id, lesson_id, type, title, payload, is_required
+         FROM LessonActivities
+         WHERE lesson_id = $1
+         ORDER BY activity_id ASC`,
+        [lesson_id]
+      );
+
+      const activities = r.rows.map(sanitizeActivityForStudent);
+      return res.json({ activities });
+    }
+
+    // ✅ ulogiran student -> dodaj has_submitted
     const r = await pool.query(
-      `SELECT activity_id, lesson_id, type, title, payload, is_required
-       FROM LessonActivities
-       WHERE lesson_id = $1
-       ORDER BY activity_id ASC`,
-      [lesson_id]
+      `SELECT 
+          a.activity_id, a.lesson_id, a.type, a.title, a.payload, a.is_required,
+          EXISTS (
+            SELECT 1
+            FROM LessonActivitySubmissions s
+            WHERE s.activity_id = a.activity_id
+              AND s.student_id = $2
+          ) AS has_submitted
+       FROM LessonActivities a
+       WHERE a.lesson_id = $1
+       ORDER BY a.activity_id ASC`,
+      [lesson_id, user.user_id]
     );
 
-    const activities = r.rows.map(sanitizeActivityForStudent);
+    // sanitize quiz payload + zadrži has_submitted
+    const activities = r.rows.map((row: any) => {
+      const safe = sanitizeActivityForStudent(row);
+      return { ...safe, has_submitted: !!row.has_submitted };
+    });
+
     return res.json({ activities });
   }
 
@@ -131,14 +156,12 @@ router.get("/activities/:lesson_id", maybe_auth, async (req, res) => {
 });
 
 router.post("/activities/:lesson_id", require_auth, require_user_roles("instructor", "admin"), async (req, res) => {
-  console.log("HIT activities", req.originalUrl);
   const lesson_id = Number(req.params.lesson_id);
   if (!Number.isInteger(lesson_id) || lesson_id <= 0) return res.status(400).json({ error: "Invalid lesson_id" });
 
   const user = req.context.user!;
   const data = await getCourseForLesson(lesson_id);
   if (!data.ok) return res.status(data.status).json({ error: data.error });
-  console.log("DATA COURSE:");
 
   if (user.role !== "admin" && data.course.instructor_id !== (user.user_id as any)) {
     return res.status(403).json({ error: "Forbidden" });
@@ -165,7 +188,6 @@ router.post("/activities/:lesson_id", require_auth, require_user_roles("instruct
  * - instructor/admin: owner/admin
  */
 router.get("/:lesson_id", maybe_auth, async (req, res) => {
-    console.log("123LESSONS ROUTER LOADEDhit lesson");
     const lesson_id = Number(req.params.lesson_id);
     if (!Number.isInteger(lesson_id) || lesson_id <= 0) return res.status(400).json({ error: "Invalid lesson_id" });
 
@@ -302,7 +324,9 @@ router.patch("/activities/:activity_id", require_auth, require_user_roles("instr
  */
 router.post("/activities/:activity_id/submit", require_auth, async (req, res) => {
   const activity_id = Number(req.params.activity_id);
-  if (!Number.isInteger(activity_id) || activity_id <= 0) return res.status(400).json({ error: "Invalid activity_id" });
+  if (!Number.isInteger(activity_id) || activity_id <= 0) {
+    return res.status(400).json({ error: "Invalid activity_id" });
+  }
 
   const user = req.context.user!;
   if (user.role !== "student") return res.status(403).json({ error: "Only students can submit" });
@@ -335,22 +359,24 @@ router.post("/activities/:activity_id/submit", require_auth, async (req, res) =>
     return res.status(400).json({ error: "Upload submission requires file_id" });
   }
 
-  // upsert (jer imaš UNIQUE(activity_id, student_id))
+  // ✅ NE DOZVOLI ponovno slanje
+  // Ako već postoji submission za (activity_id, student_id) -> 409
   const r = await pool.query(
     `INSERT INTO LessonActivitySubmissions (activity_id, student_id, answer, file_id, status)
      VALUES ($1, $2, $3::jsonb, $4::uuid, 'submitted')
      ON CONFLICT (activity_id, student_id)
-     DO UPDATE SET
-       answer = EXCLUDED.answer,
-       file_id = EXCLUDED.file_id,
-       status = 'submitted',
-       created_at = CURRENT_TIMESTAMP
+     DO NOTHING
      RETURNING submission_id, activity_id, student_id, answer, file_id, status, created_at`,
     [activity_id, user.user_id, JSON.stringify(answer ?? null), file_id ?? null]
   );
 
+  if (r.rowCount === 0) {
+    return res.status(409).json({ error: "Already submitted" });
+  }
+
   return res.status(201).json({ submission: r.rows[0] });
 });
+
 /**
  * GET /v1/lessons/activities/:activity_id/submissions
  * owner/admin
