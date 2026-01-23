@@ -33,7 +33,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Users (
-                    user_id VARCHAR PRIMARY KEY,
+                    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     first_name VARCHAR NOT NULL,
                     last_name VARCHAR NOT NULL,
                     email VARCHAR NOT NULL,
@@ -44,6 +44,7 @@ export async function init_database() {
                     audit_log_enabled BOOLEAN DEFAULT false,
                     must_change_password BOOLEAN DEFAULT true,
                     totp_secret VARCHAR,
+                    calendar_key UUID NOT NULL UNIQUE,
                     CONSTRAINT email_key UNIQUE(email),
                     CONSTRAINT status_check CHECK (status IN ('active', 'blocked', 'unverified')),
                     CONSTRAINT role_check CHECK (role IN ('student', 'instructor', 'admin'))
@@ -52,7 +53,7 @@ export async function init_database() {
 
             await client.query(`
             CREATE TABLE Instructors (
-                    instructor_id VARCHAR PRIMARY KEY,
+                    instructor_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     biography TEXT,
                     specialization VARCHAR,
                     rating NUMERIC(3,2),
@@ -67,7 +68,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Admins (
-                    admin_id VARCHAR PRIMARY KEY,
+                    admin_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     access_level VARCHAR,
                     CONSTRAINT admin_id_fkey FOREIGN KEY(admin_id)
                         REFERENCES Users(user_id)
@@ -78,7 +79,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Students (
-                    student_id VARCHAR PRIMARY KEY,
+                    student_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     skill_level VARCHAR,
                     dietary_preferences VARCHAR,
                     favorite_cuisines VARCHAR,
@@ -141,7 +142,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Recipes (
-                    recipe_id VARCHAR PRIMARY KEY,
+                    recipe_id SERIAL PRIMARY KEY,
                     name VARCHAR,
                     description VARCHAR,
                     prep_time INTEGER,
@@ -156,7 +157,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE LiveWorkshops (
-                    workshop_id SERIAL PRIMARY KEY,
+                    workshop_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     title VARCHAR,
                     description TEXT,
                     date_time TIMESTAMP WITHOUT TIME ZONE,
@@ -173,7 +174,7 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Reservations (
-                    reservation_id SERIAL PRIMARY KEY,
+                    reservation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     user_id VARCHAR,
                     workshop_id INTEGER,
                     status VARCHAR DEFAULT 'potvrđeno',

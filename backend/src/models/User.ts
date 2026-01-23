@@ -24,6 +24,7 @@ export class User {
     audit_log_enabled: boolean;
     must_change_password: boolean;
     totp_secret: string | null;
+    calendar_key : UUID;
 
     private constructor(
         is_new: boolean,
@@ -37,7 +38,8 @@ export class User {
         role: UserRole,
         audit_log_enabled: boolean,
         must_change_password: boolean,
-        totp_secret: string | null
+        totp_secret: string | null,
+        calendar_key : UUID
     ) {
         this.is_new = is_new;
         this.user_id = user_id;
@@ -51,6 +53,7 @@ export class User {
         this.audit_log_enabled = audit_log_enabled;
         this.must_change_password = must_change_password;
         this.totp_secret = totp_secret;
+        this.calendar_key = calendar_key;
     }
 
     static async new(options: NewUserOptions, send_mail: boolean = true): Promise<User> {
@@ -68,7 +71,8 @@ export class User {
             "student",
             true,
             true,
-            null
+            null,
+            randomUUID()
         );
 
         if (send_mail) {
@@ -99,7 +103,8 @@ export class User {
                     row.role,
                     row.audit_log_enabled,
                     row.must_change_password,
-                    row.totp_secret || null
+                    row.totp_secret || null,
+                    row.calendar_key
                 );
             } catch (ignored) {}
 
@@ -132,8 +137,8 @@ export class User {
     async save() {
         if (this.is_new) {
             await pool.query(
-                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "audit_log_enabled", "must_change_password", "totp_secret")
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                `INSERT INTO "users" ("user_id", "first_name", "last_name", "email", "password_hash", "registration_date", "status", "role", "audit_log_enabled", "must_change_password", "totp_secret", "calendar_key")
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
                 [
                     this.user_id,
                     this.first_name,
@@ -145,13 +150,14 @@ export class User {
                     this.role,
                     this.audit_log_enabled,
                     this.must_change_password,
-                    this.totp_secret
+                    this.totp_secret,
+                    this.calendar_key
                 ]
             );
             this.is_new = false;
         } else {
             await pool.query(
-                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "audit_log_enabled" = $9, "must_change_password" = $10, "totp_secret" = $11
+                `UPDATE "users" SET "first_name" = $2, "last_name" = $3, "email" = $4, "password_hash" = $5, "registration_date" = $6, "status" = $7, "role" = $8, "audit_log_enabled" = $9, "must_change_password" = $10, "totp_secret" = $11, "calendar_key" = $12
                  WHERE "user_id" = $1`,
                 [
                     this.user_id,
@@ -164,7 +170,8 @@ export class User {
                     this.role,
                     this.audit_log_enabled,
                     this.must_change_password,
-                    this.totp_secret
+                    this.totp_secret,
+                    this.calendar_key
                 ]
             );
         }
