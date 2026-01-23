@@ -15,36 +15,19 @@ router.get("/calendar/:user_id", async (req, res) => {
     const user_id = req.params.user_id;
     const calendar_key = req.query.calendar_key;
 
-    //Basic validation
     if (typeof calendar_key !== "string") {
-        return res.status(404).send("Not found");
+        return res.status(400).send("Bad Request");
     }
 
-    //Validate user + calendar key
-    let role;
-    let user;
-    try {
-        const user_id_converted: UUID = z.uuidv4().parse(user_id) as UUID;
-        user = await User.from_db({ user_id: user_id_converted });
-            
-        if (user) {
-            role = user.role;
-        } else {
-            return res.status(400).json({ error: "Invalid user ID" });
-        }
-    } catch(err) {
-        return res.status(400).json({ error: "Invalid user ID" });
-    }
+    let user = await User.from_db({ user_id: user_id as UUID });
 
-    if(user.calendar_key !== calendar_key) {
+    if (!user || user.calendar_key !== calendar_key) {
         return res.status(401).json({ error: "Unauthorized" });
     }
 
     try {
-        //Load user's events
         let eventsResult;
-
-        if (role === "student") {
+        if (user.role === "student") {
             eventsResult = await pool.query(
                 `
                 SELECT
@@ -56,12 +39,12 @@ router.get("/calendar/:user_id", async (req, res) => {
                 JOIN LiveWorkshops lw
                 ON lw.workshop_id = r.workshop_id
                 WHERE r.user_id = $1
-                AND r.status = 'potvrđeno'
+                AND r.status = 'confirmed'
                 ORDER BY lw.date_time
                 `,
                 [user_id]
             );
-        } else if (role === "instructor") {
+        } else if (user.role === "instructor") {
             eventsResult = await pool.query(
                 `
                 SELECT
@@ -75,14 +58,10 @@ router.get("/calendar/:user_id", async (req, res) => {
                 `,
                 [user_id]
             );
-        } else if (role === "admin") {
-            return res.status(403).json({ error: "Admins do not have calendars" });
+        } else if (user.role === "admin") {
+            return res.status(404).json({ error: "Not Found" });
         } else {
-            return res.status(500).json({ error: "Unknown user role" });
-        }
-
-        if (!eventsResult) {
-            return res.status(500).json({ error: "Failed to load events" });
+            return res.status(500).json({ error: "???" });
         }
 
         //Generate ICS dynamically
@@ -99,13 +78,11 @@ router.get("/calendar/:user_id", async (req, res) => {
         res.setHeader("Content-Type", "text/calendar; charset=utf-8");
         res.setHeader("Content-Disposition", "inline; filename=calendar.ics");
 
-        res.send(ics);    
+        res.send(ics);
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "Failed to generate calendar" });
+        return res.status(500).json({ error: "Internal Server Error" });
     }
-
-    
 });
 
 export default router;
