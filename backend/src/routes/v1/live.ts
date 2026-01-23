@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { maybe_auth, require_auth, require_user_roles } from "../../middleware/auth.js";
 import { generateJitsiToken } from "../../jitsi/token.js";
+import { env } from "../../env.js";
 
 const router = Router();
 
@@ -33,8 +34,8 @@ router.get("/:lessonId/join", require_auth, async (req, res) => {
   res.json({
     room,
     jwt: token,
-    appId: process.env.JITSI_APP_ID,
-    domain: process.env.JITSI_DOMAIN ?? "8x8.vc"
+    appId: env.JITSI_APP_ID,
+    domain: env.JITSI_DOMAIN
   });
 });
 

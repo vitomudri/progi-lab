@@ -36,6 +36,10 @@ const schema = z.object({
     S3_BUCKET_NAME: z.string(),
     S3_REGION: z.string(),
     ADMIN_EMAIL: z.string(),
+    JITSI_APP_ID: z.string(),
+    JITSI_PRIVATE_KEY_PATH: z.string(),
+    JITSI_PUBLIC_KEY_PATH: z.string(),
+    JITSI_DOMAIN: z.string(),
 });
 
 if (!PRODUCTION) {
