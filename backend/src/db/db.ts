@@ -236,9 +236,9 @@ export async function init_database() {
 
             await client.query(`
                 CREATE TABLE Reservations (
-                    reservation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     user_id UUID,
                     workshop_id UUID,
+                    PRIMARY KEY(user_id, workshop_id),
                     status VARCHAR DEFAULT 'confirmed',
                     CONSTRAINT user_id_fkey FOREIGN KEY(user_id)
                         REFERENCES Users(user_id)
