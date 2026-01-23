@@ -9,9 +9,6 @@
         <a href="#" @click="toggleDropdown">Usluge</a>
             <div :class="['dropdown-menu', { show: showDropdown }]">
                 <router-link to="/courses">Tečajevi</router-link>
-                <a href="#">Lekcije</a>
-                <a href="#">Moduli</a>
-                <a href="#">Recepti</a>
             </div>
         </li>
         <li><router-link to="/instructors">Instruktori</router-link></li>

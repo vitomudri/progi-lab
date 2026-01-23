@@ -50,7 +50,7 @@ const routes: RouteRecordRaw[] = [
     component: Instructors
   },
   {
-    path: '/instructor/:id',
+    path: '/instructors/:id',
     name: 'InstructorProfile',
     component: InstructorProfile
   },

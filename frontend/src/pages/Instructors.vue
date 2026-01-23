@@ -31,24 +31,53 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-/**
- * MOCK PODACI
- * Backend kasnije samo zamijeni fetchom
- */
-const instructors = [
-  { id: 1, name: "Ana Horvat", rating: 4.8 },
-  { id: 2, name: "Marko Kovač", rating: 4.6 },
-  { id: 3, name: "Ivana Marić", rating: 4.9 }
-];
+type Instructor = {
+  id: string;        // UUID
+  name: string;
+  rating: number | null;
+  biography?: string | null;
+  specialization?: string | null;
+};
 
-function goToInstructor(id: number) {
-  router.push(`/instructor/${id}`);
+const instructors = ref<Instructor[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+async function loadInstructors() {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    // prilagodi base URL ako ti je drugačiji (npr. /v1 umjesto /api/v1)
+    const res = await fetch("/api/v1/instructors", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // ok i ako je public; ako koristiš cookie auth, bitno
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Failed to load instructors");
+
+    instructors.value = data.instructors ?? [];
+  } catch (e: any) {
+    error.value = e?.message ?? "Greška kod učitavanja";
+  } finally {
+    loading.value = false;
+  }
 }
+
+function goToInstructor(id: string) {
+  router.push(`/instructors/${id}`);
+}
+
+onMounted(loadInstructors);
 </script>
+
 
 <style scoped>
 /* PAGE */

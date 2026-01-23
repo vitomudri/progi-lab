@@ -1,6 +1,9 @@
 <template>
   <div class="profile-page-wrapper">
-    <div class="profile-card">
+    <div v-if="loading">Učitavanje profila...</div>
+    <div v-else-if="error" style="color:red">{{ error }}</div>
+
+    <div v-else-if="profileData" class="profile-card">
       <div class="avatar-wrapper">
         <div class="avatar">
           <div class="head"></div>
@@ -24,21 +27,67 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from "vue";
 
-const profileData = ref({
-  ime: "Ana",
-  prezime: "Horvat",
-  email: "ana@example.com",
-  bio: "Iskusna kuharica sa 15 godina iskustva u talijanskoj i japanskoj kuhinji.",
-  specializations: ["Talijanska", "Japanska", "Veganska"],
-  recipes: ["Pizza Margherita", "Sushi Roll", "Veganski burger"],
-  lessons: ["Osnove talijanske kuhinje", "Napredni sushi tečaj"],
-  workshopSchedule: ["Ponedjeljak 18–20", "Srijeda 17–19"],
-  averageRating: 4.8
-});
+<script setup lang="ts">
+import { ref, onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
+
+type ProfileData = {
+  ime: string;
+  prezime: string;
+  email: string;
+  bio: string;
+  specializations: string[];
+  recipes: string[];
+  lessons: string[];
+  workshopSchedule: string[];
+  averageRating: number | null;
+};
+
+const profileData = ref<ProfileData | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+async function loadInstructorProfile() {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const raw =
+      (route.params.id ??
+        route.params.instructor_id ??
+        route.params.instructorId) as any;
+
+    const instructorId = encodeURIComponent(String(raw ?? ""));
+    if (!instructorId) throw new Error("Nedostaje instructor id u ruti");
+
+    const res = await fetch(`/api/v1/instructors/${instructorId}`, {
+      credentials: "include",
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Greška");
+
+    profileData.value = data.instructor;
+  } catch (e: any) {
+    error.value = e.message ?? "Greška kod učitavanja profila";
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(loadInstructorProfile);
+
+// ako se promijeni instruktor bez reload-a stranice
+watch(
+  () => route.params.id,
+  () => loadInstructorProfile()
+);
 </script>
+
+
 
 <style scoped>
 .profile-page-wrapper {

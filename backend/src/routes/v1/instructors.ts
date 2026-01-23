@@ -102,5 +102,88 @@ router.get("/me", require_auth, async (req, res) => {
         return res.status(500).json({ error: "Failed to fetch instructor status" });
     }
 });
+router.get("/", async (req, res) => {
+console.log("Fetching verified instructors");
+  try {
+    const r = await pool.query(
+      `SELECT
+         u.user_id as id,
+         u.first_name,
+         u.last_name,
+         i.rating,
+         i.biography,
+         i.specialization
+       FROM instructors i
+       JOIN "users" u ON u.user_id = i.instructor_id
+       WHERE i.verified = true
+       ORDER BY i.rating DESC NULLS LAST, u.last_name ASC, u.first_name ASC`
+    );
+
+    return res.json({
+      instructors: r.rows.map((x) => ({
+        id: x.id, // UUID string
+        name: `${x.first_name} ${x.last_name}`,
+        rating: x.rating ?? null,
+        biography: x.biography ?? null,
+        specialization: x.specialization ?? null,
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to fetch instructors" });
+  }
+});
+/**
+ * GET /v1/instructors/:instructor_id
+ * Public profil instruktora
+ */
+router.get("/:instructor_id", async (req, res) => {
+  const { instructor_id } = req.params;
+
+  try {
+    const r = await pool.query(
+      `
+      SELECT
+        u.user_id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        i.biography,
+        i.specialization,
+        i.rating
+      FROM instructors i
+      JOIN "users" u ON u.user_id = i.instructor_id
+      WHERE u.user_id = $1 AND i.verified = true
+      `,
+      [instructor_id]
+    );
+
+    if (r.rowCount === 0) {
+      return res.status(404).json({ error: "Instructor not found" });
+    }
+
+    const row = r.rows[0];
+
+    return res.json({
+      instructor: {
+        id: row.user_id,
+        ime: row.first_name,
+        prezime: row.last_name,
+        email: row.email,
+        bio: row.biography,
+        specializations: row.specialization ?? [],
+        averageRating: row.rating,
+        // ovo kasnije možeš puniti pravim queryjima
+        recipes: [],
+        lessons: [],
+        workshopSchedule: []
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to load instructor profile" });
+  }
+});
+
 
 export default router;
