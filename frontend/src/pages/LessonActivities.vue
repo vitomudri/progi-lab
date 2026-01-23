@@ -84,7 +84,7 @@
                   type="radio"
                   :name="`q_${a.activity_id}_${q.id}`"
                   :value="idx"
-                  v-model.number="quizAnswers[a.activity_id][q.id]"
+                  v-model.number="(quizAnswers[a.activity_id] ??= {})[q.id]"
                   :disabled="a._submitted"
                 />
                 <span>{{ opt }}</span>
@@ -112,8 +112,8 @@
           />
 
           <div v-if="uploadState[a.activity_id]?.filename" class="mini">
-            Odabrano: <b>{{ uploadState[a.activity_id].filename }}</b>
-            <span v-if="uploadState[a.activity_id].file_id" style="opacity: .8;">
+            Odabrano: <b>{{ (uploadState[a.activity_id] ?? {}).filename }}</b>
+            <span v-if="(uploadState[a.activity_id] ?? {}).file_id" style="opacity: .8;">
               · file_id spremljen ✅
             </span>
           </div>

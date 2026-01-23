@@ -35,13 +35,13 @@ admin_router.get("/audit_log", require_auth, require_user_roles("admin"), async 
     let query = `SELECT al.log_id, al.user_id, u.first_name, u.last_name, al.action, al.date_time
                  FROM AuditLogs al
                  LEFT JOIN Users u ON al.user_id = u.user_id`;
-    let count_query = "SELECT COUNT(*) FROM AuditLogs";
+    let count_query = "SELECT COUNT(*) FROM AuditLogs al";
     const params: any[] = [];
     let idx = 1;
 
     if (user_ids) {
         const placeholders = user_ids.map(() => `$${idx++}`).join(",");
-        const where = ` WHERE user_id IN (${placeholders})`;
+        const where = ` WHERE al.user_id IN (${placeholders})`;
 
         query += where;
         count_query += where;

@@ -10,18 +10,18 @@
           <div class="body"></div>
         </div>
 
-        <h2 class="name">{{ profileData.ime }} {{ profileData.prezime }}</h2>
+        <h2 class="name">{{ profileData.first_name }} {{ profileData.last_name }}</h2>
         <span class="badge">Instruktor</span>
         <p class="email">{{ profileData.email }}</p>
       </div>
 
       <div class="details">
-        <p><span class="label">Biografija:</span> {{ profileData.bio }}</p>
-        <p><span class="label">Specijalizacije:</span> {{ profileData.specializations.join(', ') }}</p>
-        <p><span class="label">Prosječna ocjena:</span> {{ profileData.averageRating }}</p>
-        <p><span class="label">Recepti:</span> {{ profileData.recipes.join(', ') }}</p>
+        <p><span class="label">Biografija:</span> {{ profileData.biography }}</p>
+        <p><span class="label">Specijalizacije:</span> {{ profileData.specialization }}</p>
+        <p><span class="label">Prosječna ocjena:</span> {{ profileData.rating }}</p>
+        <!-- <p><span class="label">Recepti:</span> {{ profileData.recipes.join(', ') }}</p>
         <p><span class="label">Lekcije:</span> {{ profileData.lessons.join(', ') }}</p>
-        <p><span class="label">Radionice:</span> {{ profileData.workshopSchedule.join(', ') }}</p>
+        <p><span class="label">Radionice:</span> {{ profileData.workshopSchedule.join(', ') }}</p> -->
       </div>
     </div>
   </div>
